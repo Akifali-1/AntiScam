@@ -26,6 +26,7 @@ class BiometricAgent:
         # If no biometric data, return neutral score
         if typing_speed is None and hesitation_count is None:
             return {
+                'agent_name': 'Biometric Agent',
                 'risk_score': 25,
                 'message': "No biometric data available",
                 'details': "Typing pattern analysis requires user interaction data. Not available in this demo.",
@@ -78,6 +79,7 @@ class BiometricAgent:
         """
         
         return {
+            'agent_name': 'Biometric Agent',
             'risk_score': round(risk_score, 1),
             'message': message,
             'details': details.strip(),

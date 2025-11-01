@@ -1,16 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Loader2 } from 'lucide-react';
 
-const TransactionForm = ({ onAnalyze, isAnalyzing, darkMode }) => {
+const TransactionForm = ({ onAnalyze, isAnalyzing, initialData }) => {
   const [formData, setFormData] = useState({
-    upiId: '',
-    amount: '',
-    message: ''
+    upiId: initialData?.upi_id || initialData?.upiId || '',
+    amount: initialData?.amount || '',
+    message: initialData?.message || ''
   });
+
+  // Update form when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        upiId: initialData.upi_id || initialData.upiId || '',
+        amount: initialData.amount || '',
+        message: initialData.message || ''
+      });
+    }
+  }, [initialData]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -28,47 +39,47 @@ const TransactionForm = ({ onAnalyze, isAnalyzing, darkMode }) => {
       data-testid="transaction-form"
     >
       <div className="mb-6">
-        <h3 className={darkMode ? "text-2xl font-semibold mb-2 text-white" : "text-2xl font-semibold mb-2 text-gray-900"}>Enter Transaction Details</h3>
-        <p className={darkMode ? "text-sm text-gray-400" : "text-sm text-gray-600"}>Fill in the details below to analyze the transaction</p>
+        <h3 className="text-2xl font-semibold mb-2 dark:text-white text-gray-900">Enter Transaction Details</h3>
+        <p className="text-sm dark:text-gray-400 text-gray-600">Fill in the details below to analyze the transaction</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label className={darkMode ? "block text-sm font-medium mb-2 text-gray-300" : "block text-sm font-medium mb-2 text-gray-700"}>Receiver UPI ID *</label>
+          <label className="block text-sm font-medium mb-2 dark:text-gray-300 text-gray-700">Receiver UPI ID *</label>
           <Input
             data-testid="upi-id-input"
             type="text"
             placeholder="example@okaxis"
             value={formData.upiId}
             onChange={(e) => setFormData({ ...formData, upiId: e.target.value })}
-            className={darkMode ? "bg-gray-700 border-gray-600 text-white placeholder:text-gray-400" : "bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"}
+            className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
             required
             disabled={isAnalyzing}
           />
         </div>
 
         <div>
-          <label className={darkMode ? "block text-sm font-medium mb-2 text-gray-300" : "block text-sm font-medium mb-2 text-gray-700"}>Amount (₹) *</label>
+          <label className="block text-sm font-medium mb-2 dark:text-gray-300 text-gray-700">Amount (₹) *</label>
           <Input
             data-testid="amount-input"
             type="number"
             placeholder="1000"
             value={formData.amount}
             onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-            className={darkMode ? "bg-gray-700 border-gray-600 text-white placeholder:text-gray-400" : "bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"}
+            className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400"
             required
             disabled={isAnalyzing}
           />
         </div>
 
         <div>
-          <label className={darkMode ? "block text-sm font-medium mb-2 text-gray-300" : "block text-sm font-medium mb-2 text-gray-700"}>Message / Note</label>
+          <label className="block text-sm font-medium mb-2 dark:text-gray-300 text-gray-700">Message / Note</label>
           <Textarea
             data-testid="message-input"
             placeholder="Enter transaction description..."
             value={formData.message}
             onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-            className={darkMode ? "bg-gray-700 border-gray-600 text-white placeholder:text-gray-400 min-h-[100px]" : "bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 min-h-[100px]"}
+            className="dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder:text-gray-400 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 min-h-[100px]"
             disabled={isAnalyzing}
           />
         </div>

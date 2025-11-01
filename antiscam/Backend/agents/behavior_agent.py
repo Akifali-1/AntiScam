@@ -2,8 +2,8 @@ import os
 import warnings
 import numpy as np
 import joblib
+from datetime import datetime, timedelta, timezone
 import pandas as pd
-from datetime import datetime
 from sklearn.ensemble import IsolationForest
 from database.db import get_db
 
@@ -82,6 +82,7 @@ class BehaviorAgent:
             self._update_user_pattern(user_id, amount, time_str)
 
             return {
+                "agent_name": "Behavior Agent",
                 "risk_score": round(risk_score, 1),
                 "message": message,
                 "details": "Analyzed using IsolationForest-based anomaly detection.",
@@ -91,9 +92,11 @@ class BehaviorAgent:
         except Exception as e:
             print(f"❌ Error during analysis: {e}")
             return {
+                "agent_name": "Behavior Agent",
                 "risk_score": 50,
                 "message": "Error during behavior analysis.",
-                "details": str(e)
+                "details": str(e),
+                "evidence": []
             }
 
     # ------------------- FEEDBACK & RETRAINING -------------------
@@ -144,7 +147,7 @@ class BehaviorAgent:
             return
 
         X = df[features].values
-        model = IsolationForest(n_estimators=100, contamination=0.07, random_state=42)
+        model = IsolationForest(n_estimators=100, contamination="auto", random_state=42)
         model.fit(X)
 
         joblib.dump(model, self.model_path)
@@ -154,6 +157,8 @@ class BehaviorAgent:
     # ------------------- UTILITIES -------------------
     def _get_user_pattern(self, user_id):
         db = get_db()
+        if db is None:
+            return None
         return db.user_behavior.find_one({"user_id": user_id}) or None
 
     def _extract_features(self, transaction, user_pattern):
@@ -164,6 +169,14 @@ class BehaviorAgent:
 
         # Frequency & delta logic
         transaction_count = user_pattern.get('transaction_count', 0) if user_pattern else 0
+        frequency = min(transaction_count / 30.0, 5.0) if transaction_count > 0 else 0.0  # Cap at 5
+        
+        # Day of week (0=Monday, 6=Sunday)
+        # Get current day or from transaction time if available
+        now = datetime.now(timezone.utc)
+        day_of_week = now.weekday()
+        
+        # Delta hours: hours since last transaction
         frequency = min(transaction_count / 30.0, 5.0) if transaction_count > 0 else 0.0
         day_of_week = datetime.utcnow().weekday()
 
@@ -191,6 +204,43 @@ class BehaviorAgent:
             return int(time_str.split(':')[0])
         except:
             return None
+    
+    def _update_user_pattern(self, user_id, amount, time_str):
+        """Update user behavior pattern in database"""
+        db = get_db()
+        if db is None:
+            return
+        user_behavior = db.user_behavior
+        
+        # Get existing pattern
+        existing = user_behavior.find_one({"user_id": user_id})
+        now = datetime.now(timezone.utc)
+        
+        if existing:
+            # Update existing
+            new_count = existing.get('transaction_count', 0) + 1
+            old_avg = existing.get('avg_amount', 0) or 0
+            old_count = existing.get('transaction_count', 1) or 1
+            new_avg = ((old_avg * old_count) + amount) / new_count
+            
+            user_behavior.update_one(
+                {"user_id": user_id},
+                {
+                    "$set": {
+                        "avg_amount": new_avg,
+                        "transaction_count": new_count,
+                        "last_transaction_at": now
+                    }
+                }
+            )
+        else:
+            # Create new user pattern
+            user_behavior.insert_one({
+                "user_id": user_id,
+                "avg_amount": amount,
+                "transaction_count": 1,
+                "last_transaction_at": now
+            })
 
     def _generate_message(self, risk_score, amount, time_str, user_pattern):
         evidence = []
@@ -214,21 +264,26 @@ class BehaviorAgent:
 
         return message, evidence
 
-    def _update_user_pattern(self, user_id, amount, time_str):
-        db = get_db()
-        coll = db.user_behavior
-        now = datetime.utcnow()
-
-        existing = coll.find_one({"user_id": user_id})
-        if existing:
-            new_count = existing.get('transaction_count', 0) + 1
-            old_avg = existing.get('avg_amount', 0)
-            new_avg = ((old_avg * existing.get('transaction_count', 1)) + amount) / new_count
-            coll.update_one({"user_id": user_id}, {"$set": {"avg_amount": new_avg, "transaction_count": new_count, "last_transaction_at": now}})
-        else:
-            coll.insert_one({
-                "user_id": user_id,
-                "avg_amount": amount,
-                "transaction_count": 1,
-                "last_transaction_at": now
-            })
+    def _rule_based_analysis(self, transaction, user_pattern):
+        """Fallback rule-based analysis when model is not available."""
+        risk_score = 50  # Default risk score
+        
+        amount = float(transaction.get('amount', 0))
+        time_str = transaction.get('time', '')
+        
+        if user_pattern:
+            avg_amount = user_pattern.get('avg_amount', 0)
+            # High amount deviation increases risk
+            if amount > avg_amount * 2:
+                risk_score += 20
+            elif amount > avg_amount * 1.5:
+                risk_score += 10
+                
+        # Time-based risk
+        hour = self._extract_hour(time_str)
+        if hour and (hour < 6 or hour > 23):
+            risk_score += 15
+            
+        # Cap risk score between 0 and 100
+        risk_score = max(0, min(100, risk_score))
+        return risk_score

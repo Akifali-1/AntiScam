@@ -84,6 +84,7 @@ class PatternAgent:
         message, evidence = self._generate_message(risk_score)
 
         return {
+            'agent_name': 'Pattern Agent',
             'risk_score': round(risk_score, 1),
             'message': message,
             'details': "Analyzed transaction text for scam patterns using ML or keyword analysis.",
