@@ -102,7 +102,7 @@ pip install -r requirements.txt
 # Create .env file
 # Add your MongoDB connection string:
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/?appName=Cluster0
-DB_NAME=figment
+DB_NAME=AntiScam
 ```
 
 **Place ML Models:**
