@@ -8,6 +8,13 @@ import { AlertTriangle } from 'lucide-react';
 const ResultsModal = ({ isOpen, results, onCancel, onProceed, onReport, onClose }) => {
   if (!results) return null;
 
+  const handleProceedClick = () => {
+    onClose(); // Close dialog first
+    setTimeout(() => {
+      onProceed(); // Then trigger proceed
+    }, 100);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white border-2 border-[#00C896]/30 p-0" data-testid="results-modal">
@@ -69,7 +76,7 @@ const ResultsModal = ({ isOpen, results, onCancel, onProceed, onReport, onClose 
             </Button>
             <Button
               data-testid="proceed-anyway-btn"
-              onClick={onProceed}
+              onClick={handleProceedClick}
               variant="outline"
               className="flex-1 border-2 border-orange-500 text-orange-600 hover:bg-orange-50 py-6 text-lg rounded-xl"
             >

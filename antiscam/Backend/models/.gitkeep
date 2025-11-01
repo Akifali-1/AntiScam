@@ -1,0 +1,31 @@
+# Models directory
+# Place your trained ML models here after training in Google Colab:
+
+## Pattern Agent Model
+**Filename:** `pattern_agent_tiny.pkl` (or `pattern_model.pkl`)
+- Single Pipeline file containing TF-IDF vectorizer + Logistic Regression classifier
+- Trained using: sklearn Pipeline
+- The agent will look for either filename
+
+## Behavior Agent Model
+**Filename:** `behavior_iforest.pkl`
+- sklearn IsolationForest model for anomaly detection
+- Features: ["amount", "hour", "frequency", "day_of_week", "delta_hours"]
+- No scaler needed - IsolationForest handles normalization internally
+
+**Note:** 
+- Model must be saved using `joblib.dump()` in Colab
+- If model not found, falls back to rule-based analysis
+- IsolationForest detects anomalies by identifying outliers in feature space
+
+---
+
+## File Structure:
+```
+Backend/models/
+  ├── pattern_agent_tiny.pkl    (or pattern_model.pkl)
+  └── behavior_iforest.pkl
+```
+
+## Installation:
+After placing models, restart the Flask backend server.
