@@ -23,6 +23,7 @@ class NetworkAgent:
         
         if not receiver:
             return {
+                'agent_name': 'Network Agent',
                 'risk_score': 0,
                 'message': 'No receiver ID provided',
                 'details': '',
@@ -31,6 +32,15 @@ class NetworkAgent:
         
         # Query MongoDB for reports
         db = get_db()
+        if db is None:
+            return {
+                'agent_name': 'Network Agent',
+                'risk_score': 0,
+                'message': 'Database connection failed',
+                'details': '',
+                'evidence': []
+            }
+            
         scam_reports = db.scam_reports
         
         # Find scam report for this receiver
@@ -79,9 +89,9 @@ class NetworkAgent:
         """
         
         return {
+            'agent_name': 'Network Agent',
             'risk_score': round(risk_score, 1),
             'message': message,
             'details': details.strip(),
             'evidence': evidence
         }
-

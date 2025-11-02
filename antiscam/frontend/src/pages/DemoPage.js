@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import TopNav from '../components/TopNav';
 import TransactionForm from '../components/TransactionForm';
@@ -9,7 +10,10 @@ import FeedbackModal from '../components/FeedbackModal';
 import { analyzeTransaction as analyzeTransactionAPI, completeTransaction, submitFeedback } from '../services/api';
 import { toast } from 'sonner';
 
-const DemoPage = ({ onLogout }) => {
+
+
+const DemoPage = ({ onLogout, darkMode, toggleDarkMode }) => {
+  const [searchParams] = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState(null);
@@ -32,14 +36,14 @@ const DemoPage = ({ onLogout }) => {
   const handleAnalyze = async (formData) => {
     setIsAnalyzing(true);
     setShowResults(false);
-    
+
     // Add user_id to transaction data
     const transactionData = {
       ...formData,
       user_id: userId
     };
     setCurrentTransaction(transactionData);
-    
+
     try {
       // Call backend API
       const analysisResults = await analyzeTransactionAPI(transactionData);
@@ -81,13 +85,13 @@ const DemoPage = ({ onLogout }) => {
   const handlePINComplete = async (pin) => {
     // PIN entered - complete transaction
     setShowPINEntry(false);
-    
+
     try {
       const now = new Date();
-      const timeStr = now.toLocaleTimeString('en-US', { 
-        hour: 'numeric', 
+      const timeStr = now.toLocaleTimeString('en-US', {
+        hour: 'numeric',
         minute: '2-digit',
-        hour12: true 
+        hour12: true
       });
 
       const txData = {
@@ -101,9 +105,9 @@ const DemoPage = ({ onLogout }) => {
 
       const result = await completeTransaction(txData);
       setCompletedTxId(result.transaction_id);
-      
+
       toast.success('Transaction completed successfully!');
-      
+
       // Show feedback if risk was detected
       if (results?.overallRisk >= 40) {
         setTimeout(() => {
@@ -140,7 +144,7 @@ const DemoPage = ({ onLogout }) => {
       }
 
       setShowFeedback(false);
-      
+
       // Reset everything
       setTimeout(() => {
         setResults(null);
@@ -155,7 +159,7 @@ const DemoPage = ({ onLogout }) => {
 
   const handleReport = async () => {
     if (!currentTransaction) return;
-    
+
     try {
       // Call backend API to report scam
       const { reportScam } = await import('../services/api');
@@ -163,7 +167,7 @@ const DemoPage = ({ onLogout }) => {
         receiver: currentTransaction.upiId,
         reason: `High risk scam detected (Risk: ${results?.overallRisk || 'N/A'}%)`
       });
-      
+
       toast.success('Scam reported! Thank you for helping protect the community.');
     } catch (error) {
       toast.error('Failed to report scam. Please try again.');
@@ -172,11 +176,11 @@ const DemoPage = ({ onLogout }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFB]">
+    <div className="min-h-screen dark:bg-gray-900 bg-[#F8FAFB]">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} onLogout={onLogout} />
-      <TopNav onMenuClick={() => setSidebarOpen(true)} />
-      
-      <section className="pt-32 pb-20 px-6" data-testid="demo-section">
+      <TopNav onMenuClick={() => setSidebarOpen(true)} darkMode={darkMode} onDarkModeToggle={toggleDarkMode} />
+
+      <section className="pt-24 pb-20 px-6" data-testid="demo-section">
         <div className="max-w-4xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -184,11 +188,19 @@ const DemoPage = ({ onLogout }) => {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <h1 className="text-4xl sm:text-5xl font-bold mb-4 text-gray-900">Try FIGMENT Live Demo</h1>
-            <p className="text-gray-600 text-lg">Enter transaction details to see AI analysis in action</p>
+            <h1 className="text-4xl sm:text-5xl font-bold mb-4 dark:text-white text-gray-900">Try FIGMENT Live Demo</h1>
+            <p className="text-lg dark:text-gray-300 text-gray-600">Enter transaction details to see AI analysis in action</p>
           </motion.div>
 
-          <TransactionForm onAnalyze={handleAnalyze} isAnalyzing={isAnalyzing} />
+          <TransactionForm
+            onAnalyze={handleAnalyze}
+            isAnalyzing={isAnalyzing}
+            initialData={{
+              upi_id: searchParams.get('upi_id') || '',
+              amount: searchParams.get('amount') || '',
+              message: searchParams.get('message') || ''
+            }}
+          />
 
           {/* Analyzing Animation */}
           <AnimatePresence>
@@ -204,7 +216,7 @@ const DemoPage = ({ onLogout }) => {
                   <div className="w-16 h-16 border-4 border-[#E0F7F4] border-t-[#00C896] rounded-full animate-spin"></div>
                   <div>
                     <p className="text-xl font-semibold text-[#00C896] mb-2">Analyzing Transaction...</p>
-                    <p className="text-sm text-gray-600">AI agents are scanning for risks</p>
+                    <p className="text-sm dark:text-gray-400 text-gray-600">AI agents are scanning for risks</p>
                   </div>
                 </div>
               </motion.div>
@@ -218,6 +230,7 @@ const DemoPage = ({ onLogout }) => {
             onProceed={handleProceed}
             onReport={handleReport}
             onClose={() => setShowResults(false)}
+            darkMode={darkMode}
           />
 
           {/* Proceed Warning Dialog */}
@@ -237,15 +250,15 @@ const DemoPage = ({ onLogout }) => {
                   onClick={(e) => e.stopPropagation()}
                   className="glass p-6 rounded-2xl max-w-md w-full mx-4 border-2 border-orange-500/30"
                 >
-                  <h3 className="text-xl font-bold mb-2 text-gray-900">⚠️ Scam Detected</h3>
-                  <p className="text-gray-600 mb-4">
-                    Our AI detected a potential scam with {results?.overallRisk || 'high'}% risk. 
+                  <h3 className="text-xl font-bold mb-2 dark:text-white text-gray-900">⚠️ Scam Detected</h3>
+                  <p className="mb-4 dark:text-gray-300 text-gray-600">
+                    Our AI detected a potential scam with {results?.overallRisk || 'high'}% risk.
                     Are you sure you want to proceed?
                   </p>
                   <div className="flex gap-3">
                     <button
                       onClick={() => setShowProceedWarning(false)}
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800 dark:text-white"
                     >
                       Go Back
                     </button>
@@ -276,6 +289,7 @@ const DemoPage = ({ onLogout }) => {
                 }}
                 receiver={currentTransaction?.upiId}
                 amount={currentTransaction?.amount}
+                darkMode={darkMode}
               />
             )}
           </AnimatePresence>
@@ -292,6 +306,7 @@ const DemoPage = ({ onLogout }) => {
             onSubmit={handleFeedbackSubmit}
             receiver={currentTransaction?.upiId}
             riskScore={results?.overallRisk}
+            darkMode={darkMode}
           />
 
           {/* Demo Tips */}
@@ -301,17 +316,17 @@ const DemoPage = ({ onLogout }) => {
             transition={{ delay: 0.3, duration: 0.6 }}
             className="mt-12 glass p-6 rounded-2xl"
           >
-            <h3 className="text-lg font-semibold text-blue-600 mb-3">💡 Try These Examples</h3>
+            <h3 className="text-lg font-semibold mb-3 dark:text-blue-400 text-blue-600">💡 Try These Examples</h3>
             <div className="grid md:grid-cols-2 gap-4 text-sm">
-              <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                <p className="text-gray-700 font-semibold mb-2">High Risk Example:</p>
-                <p className="text-gray-600 font-mono text-xs">UPI: kycupdate@okaxis</p>
-                <p className="text-gray-600 font-mono text-xs">Message: "KYC verification fee"</p>
+              <div className="p-4 rounded-lg border dark:bg-red-900/30 dark:border-red-800 bg-red-50 border-red-200">
+                <p className="font-semibold mb-2 dark:text-gray-200 text-gray-700">High Risk Example:</p>
+                <p className="font-mono text-xs dark:text-gray-300 text-gray-600">UPI: kycupdate@okaxis</p>
+                <p className="font-mono text-xs dark:text-gray-300 text-gray-600">Message: "KYC verification fee"</p>
               </div>
-              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                <p className="text-gray-700 font-semibold mb-2">Safe Transaction:</p>
-                <p className="text-gray-600 font-mono text-xs">UPI: friend@paytm</p>
-                <p className="text-gray-600 font-mono text-xs">Message: "Lunch split"</p>
+              <div className="p-4 rounded-lg border dark:bg-green-900/30 dark:border-green-800 bg-green-50 border-green-200">
+                <p className="font-semibold mb-2 dark:text-gray-200 text-gray-700">Safe Transaction:</p>
+                <p className="font-mono text-xs dark:text-gray-300 text-gray-600">UPI: friend@paytm</p>
+                <p className="font-mono text-xs dark:text-gray-300 text-gray-600">Message: "Lunch split"</p>
               </div>
             </div>
           </motion.div>
