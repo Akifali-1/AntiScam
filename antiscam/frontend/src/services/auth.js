@@ -75,9 +75,17 @@ export const verifyToken = async () => {
   try {
     const response = await axios.post(`${API_BASE_URL}/api/auth/verify`, {
       token
+    }, {
+      timeout: 5000 // 5 second timeout
     });
     return response.data.valid === true;
   } catch (error) {
+    // If server is down or connection refused, clear token
+    if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+      // Server is down, clear token so user needs to login again
+      removeToken();
+      removeUser();
+    }
     return false;
   }
 };

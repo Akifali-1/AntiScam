@@ -8,6 +8,7 @@ import os
 import pandas as pd
 from datetime import datetime, timezone
 from dotenv import load_dotenv
+import logging
 
 # Load environment variables from .env file
 load_dotenv()
@@ -56,6 +57,20 @@ transaction_service = init_transaction_service(socketio)
 
 # Register blueprints
 app.register_blueprint(auth_bp)
+
+# Configure logging to suppress expected 401 errors for unauthenticated requests
+class Filter401(logging.Filter):
+    """Filter to suppress 401 logs for authentication endpoints"""
+    def filter(self, record):
+        # Suppress 401 logs for user-analytics and other protected endpoints
+        # These are expected when users aren't logged in
+        if '401' in str(record.getMessage()) and any(endpoint in str(record.getMessage()) for endpoint in ['/api/user-analytics', '/api/transaction-history', '/api/analyze']):
+            return False
+        return True
+
+# Apply filter to werkzeug logger
+werkzeug_logger = logging.getLogger('werkzeug')
+werkzeug_logger.addFilter(Filter401())
 
 # SocketIO events
 @socketio.on('connect')

@@ -54,14 +54,18 @@ def token_required(f):
             try:
                 token = auth_header.split(' ')[1]  # Format: "Bearer <token>"
             except IndexError:
+                # Invalid token format - expected for unauthenticated requests
                 return jsonify({'error': 'Invalid token format'}), 401
         
         if not token:
+            # No token provided - expected for unauthenticated requests
+            # This is normal when users aren't logged in, so we don't log it as an error
             return jsonify({'error': 'Token is missing'}), 401
         
         try:
             payload = verify_token(token)
             if payload is None:
+                # Token invalid or expired - log this as it might indicate an issue
                 return jsonify({'error': 'Token is invalid or expired'}), 401
             
             # Add user info to request context

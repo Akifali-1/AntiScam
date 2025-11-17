@@ -13,7 +13,7 @@ import { useWebSocket } from "./hooks/useWebSocket";
 
 // Alert Manager Component - Must be inside Router
 function AlertManager({ isAuthenticated }) {
-  const { alerts, isConnected, dismissAlert } = useWebSocket();
+  const { alerts, isConnected, dismissAlert } = useWebSocket(isAuthenticated);
   const navigate = useNavigate(); // Now we can safely use useNavigate here
 
   if (!isAuthenticated) {
@@ -51,11 +51,6 @@ function App() {
   const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    const auth = localStorage.getItem('figment_auth');
-    if (auth) {
-      setIsAuthenticated(true);
-    }
-
     // Check user preference for dark mode
     const savedDarkMode = localStorage.getItem('figment_dark_mode') === 'true';
     setDarkMode(savedDarkMode);
@@ -75,15 +70,49 @@ function App() {
         if (isValid) {
           setIsAuthenticated(true);
         } else {
-          // Token is invalid, clear it
+          // Token is invalid or server is down, clear it
           removeToken();
           removeUser();
+          setIsAuthenticated(false);
         }
+      } else {
+        // No token, ensure user is logged out
+        setIsAuthenticated(false);
       }
       setIsChecking(false);
     };
 
     checkAuth();
+  }, []);
+
+  // Clear authentication on app close or tab close
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Clear token and user data when closing the app
+      removeToken();
+      removeUser();
+    };
+
+    const handleVisibilityChange = () => {
+      // If tab becomes hidden, we can optionally clear auth
+      // But for now, we'll only clear on actual close
+      if (document.visibilityState === 'hidden') {
+        // Optionally clear auth when tab is hidden
+        // Uncomment the next lines if you want to log out when tab is hidden
+        // removeToken();
+        // removeUser();
+        // setIsAuthenticated(false);
+      }
+    };
+
+    // Clear auth when page is being unloaded (browser close, tab close, refresh)
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   const handleLogin = () => {

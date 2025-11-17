@@ -25,6 +25,7 @@ const DemoPage = ({ onLogout, darkMode, toggleDarkMode }) => {
   const [completedTxId, setCompletedTxId] = useState(null);
 
   // WebSocket hook for real-time features
+  // DemoPage is a protected route, so user is always authenticated
   const {
     alerts,
     isConnected,
@@ -34,7 +35,7 @@ const DemoPage = ({ onLogout, darkMode, toggleDarkMode }) => {
     joinUserRoom,
     leaveUserRoom,
     requestRecentTransactions
-  } = useWebSocket();
+  } = useWebSocket(true);
 
   const [userId] = useState(() => {
     // Generate persistent user ID
