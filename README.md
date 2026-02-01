@@ -41,4 +41,5 @@ A mobile-first implementation designed for on-the-go transaction monitoring and 
 ## Getting Started
 
 For detailed instructions on setting up and running each version, please refer to the respective README files:
-- [Web Application README](README.md)
+- [Web Application README](antiscam/README.md)
+- [Mobile App README](app/README.md)
