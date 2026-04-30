@@ -12,14 +12,14 @@ FIGMENT uses **4 specialized AI agents** to analyze each transaction from differ
 
 Each agent provides a **risk score with detailed explanations**, and the system combines these scores to give users a clear, actionable warning before completing potentially fraudulent transactions.
 
-## ✨ Recent Enhancements
+## ✨ Key Capabilities
 
-- **Dynamic Threat Clustering** - Automatically groups similar scam patterns using ML embeddings and clustering algorithms
-- **Intelligent Alert System** - Real-time alerts for trending threats, cluster members, and pattern matches
-- **Gemini AI Integration** - Generates human-readable explanations with threat intelligence context
-- **Real-time Dashboard** - Shows analytics with data from MongoDB, refreshes every 5 minutes
-- **WebSocket Updates** - Real-time transaction analysis results and threat alerts
-- **Improved Dark Mode** - Consistent styling across all components
+- **Dynamic Threat Clustering** — ML embeddings (TF-IDF/sentence similarity) group reported receivers into scam clusters automatically. New reports trigger cluster re-evaluation nightly.
+- **Intelligent Alert System** — Real-time WebSocket alerts fire when a receiver the user is transacting with is found in a trending threat list or a known scam cluster.
+- **Feedback Loop** — After every transaction the user can confirm if it was a scam. Once 10 new confirmations are collected, the Pattern and Behavior models are retrained automatically.
+- **Gemini AI Integration** — Generates 2-3 sentence, plain-language explanations of *why* a transaction was flagged, including threat intelligence context (cluster membership, trending reports).
+- **Real-time Dashboard** — Live analytics pulled from MongoDB, auto-refreshing every 5 minutes.
+- **Threat Intelligence Hub** — View top active scam clusters and trending threats in one place.
 
 ---
 
@@ -396,9 +396,8 @@ Built for hackathon demonstration purposes.
 ## 📚 Additional Resources
 
 - **Models:** Place trained `.pkl` files in `Backend/models/`
-- **Database:** Run `seed_scam_data.py` to populate sample scam data
 - **API Docs:** See inline comments in `Backend/app.py`
-- **Frontend Docs:** See `Frontend/src/services/api.js`
+- **Frontend Services:** See `Frontend/src/services/api.js`
 
 ---
 

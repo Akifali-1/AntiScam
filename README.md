@@ -21,6 +21,10 @@ FIGMENT is a multi-agent AI system designed to detect potential scams during UPI
 
 The system aggregates results from all agents into an overall risk score. For high-risk transactions (>40% risk), the system requires PIN confirmation before proceeding.
 
+A **Threat Intelligence Hub** continuously clusters known scam patterns using ML embeddings and flags receivers that are trending in fraud reports in real time via WebSockets.
+
+A **Feedback Loop** allows users to confirm if a completed transaction was a scam — this data is saved and used to periodically retrain the ML models, improving detection over time.
+
 Additionally, Gemini AI generates human-readable explanations for why a transaction was flagged, helping users understand the risks.
 
 ## Implementation Approaches
