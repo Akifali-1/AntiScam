@@ -14,8 +14,7 @@ import { SocketProvider, useSocketContext } from "./context/SocketContext";
 import APP_ROUTES from "./routes";
 
 // Alert Manager Component - Must be inside Router
-function AlertManager({ isAuthenticated }) {
-  const socketContext = useSocketContext();
+function AlertManager({ isAuthenticated }) {  const socketContext = useSocketContext();
   if (!isAuthenticated || !socketContext) {
     return null;
   }
@@ -120,8 +119,8 @@ function App() {
   // Show loading state while checking authentication
   if (isChecking) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-bg">
+        <div className="w-8 h-8 rounded-full border-2 border-border-strong border-t-ink spin" />
       </div>
     );
   }
@@ -160,7 +159,7 @@ function App() {
           </Routes>
         </BrowserRouter>
       </SocketProvider>
-      
+
       <Toaster richColors />
     </div>
   );

@@ -317,21 +317,23 @@ const DemoPage = ({ onLogout, darkMode, toggleDarkMode }) => {
   };
 
   return (
-    <div className="min-h-screen dark:bg-gray-900 bg-[#F8FAFB]">
+    <div className="min-h-screen bg-bg">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} onLogout={onLogout} />
       <TopNav onMenuClick={() => setSidebarOpen(true)} darkMode={darkMode} onDarkModeToggle={toggleDarkMode} />
 
       <section className="pt-24 pb-20 px-6" data-testid="demo-section">
         <div className="max-w-4xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
+          <motion.header
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
+            transition={{ duration: 0.4 }}
+            className="mb-10"
           >
-            <h1 className="text-4xl sm:text-5xl font-bold mb-4 dark:text-white text-gray-900">Try FIGMENT Live Demo</h1>
-            <p className="text-lg dark:text-gray-300 text-gray-600">Enter transaction details to see AI analysis in action</p>
-          </motion.div>
+            <h1 className="t-page mb-2">Run a transfer through it</h1>
+            <p className="text-ink-muted">
+              Enter the details as you'd receive them, and watch the four agents read it.
+            </p>
+          </motion.header>
 
           <TransactionForm
             onAnalyze={handleAnalyze}
@@ -350,18 +352,16 @@ const DemoPage = ({ onLogout, darkMode, toggleDarkMode }) => {
           <AnimatePresence>
             {isAnalyzing && (
               <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="mt-8 glass p-8 rounded-2xl text-center"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                className="card card-pad mt-6 flex items-center gap-4"
                 data-testid="analyzing-indicator"
               >
-                <div className="flex flex-col items-center gap-4">
-                  <div className="w-16 h-16 border-4 border-[#E0F7F4] border-t-[#00C896] rounded-full animate-spin"></div>
-                  <div>
-                    <p className="text-xl font-semibold text-[#00C896] mb-2">Analyzing Transaction...</p>
-                    <p className="text-sm dark:text-gray-400 text-gray-600">AI agents are scanning for risks</p>
-                  </div>
+                <div className="w-7 h-7 rounded-full border-2 border-border-strong border-t-ink spin shrink-0" />
+                <div>
+                  <p className="text-ui font-medium text-ink">Reading the transfer…</p>
+                  <p className="t-secondary">Four agents are scoring it now.</p>
                 </div>
               </motion.div>
             )}
@@ -384,33 +384,33 @@ const DemoPage = ({ onLogout, darkMode, toggleDarkMode }) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/50"
                 onClick={() => setShowProceedWarning(false)}
               >
                 <motion.div
-                  initial={{ scale: 0.9, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.9, opacity: 0 }}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
                   onClick={(e) => e.stopPropagation()}
-                  className="glass p-6 rounded-2xl max-w-md w-full mx-4 border-2 border-orange-500/30"
+                  className="card p-6 max-w-md w-full mx-4"
                 >
-                  <h3 className="text-xl font-bold mb-2 dark:text-white text-gray-900">⚠️ Scam Detected</h3>
-                  <p className="mb-4 dark:text-gray-300 text-gray-600">
-                    Our AI detected a potential scam with {results?.overallRisk || 'high'}% risk.
-                    Are you sure you want to proceed?
+                  <h3 className="t-section mb-2">This one looks like a scam</h3>
+                  <p className="t-secondary mb-5">
+                    The agents scored this transfer {results?.overallRisk || 'high'} out of 100.
+                    Sending it anyway is your call.
                   </p>
-                  <div className="flex gap-3">
+                  <div className="flex gap-2">
                     <button
                       onClick={() => setShowProceedWarning(false)}
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-800 dark:text-white"
+                      className="btn btn-secondary flex-1"
                     >
-                      Go Back
+                      Go back
                     </button>
                     <button
                       onClick={handleProceedConfirm}
-                      className="flex-1 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                      className="btn btn-danger flex-1"
                     >
-                      Proceed Anyway
+                      Send anyway
                     </button>
                   </div>
                 </motion.div>
@@ -454,26 +454,26 @@ const DemoPage = ({ onLogout, darkMode, toggleDarkMode }) => {
           />
 
           {/* Demo Tips */}
-          <motion.div
+          <motion.section
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-            className="mt-12 glass p-6 rounded-2xl"
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="mt-10"
           >
-            <h3 className="text-lg font-semibold mb-3 dark:text-blue-400 text-blue-600">💡 Try These Examples</h3>
-            <div className="grid md:grid-cols-2 gap-4 text-sm">
-              <div className="p-4 rounded-lg border dark:bg-red-900/30 dark:border-red-800 bg-red-50 border-red-200">
-                <p className="font-semibold mb-2 dark:text-gray-200 text-gray-700">High Risk Example:</p>
-                <p className="font-mono text-xs dark:text-gray-300 text-gray-600">UPI: kycupdate@okaxis</p>
-                <p className="font-mono text-xs dark:text-gray-300 text-gray-600">Message: "KYC verification fee"</p>
+            <h3 className="t-card mb-3">Two to try</h3>
+            <div className="grid md:grid-cols-2 gap-3">
+              <div className="note note-red">
+                <p className="text-ui font-medium mb-2">Reads as a scam</p>
+                <p className="t-technical text-ink-muted">kycupdate@okaxis</p>
+                <p className="t-technical text-ink-muted">"KYC verification fee"</p>
               </div>
-              <div className="p-4 rounded-lg border dark:bg-green-900/30 dark:border-green-800 bg-green-50 border-green-200">
-                <p className="font-semibold mb-2 dark:text-gray-200 text-gray-700">Safe Transaction:</p>
-                <p className="font-mono text-xs dark:text-gray-300 text-gray-600">UPI: friend@paytm</p>
-                <p className="font-mono text-xs dark:text-gray-300 text-gray-600">Message: "Lunch split"</p>
+              <div className="note note-teal">
+                <p className="text-ui font-medium mb-2">Reads as ordinary</p>
+                <p className="t-technical text-ink-muted">friend@paytm</p>
+                <p className="t-technical text-ink-muted">"Lunch split"</p>
               </div>
             </div>
-          </motion.div>
+          </motion.section>
         </div>
       </section>
     </div>

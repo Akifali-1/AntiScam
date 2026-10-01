@@ -1,203 +1,299 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+/*
+ * Component layer.
+ *
+ * These are the recurring shapes of the product — a card, a button, a status
+ * pill, a data table. Screens compose these rather than re-inventing them with
+ * utility soup, which is what keeps a 6-page app looking like one thing.
+ *
+ * Everything here reads from the tokens in index.css. No literals.
+ */
 
 * {
-  margin: 0;
-  padding: 0;
   box-sizing: border-box;
 }
 
 body {
-  font-family: 'Inter', sans-serif;
-  background: #F5F8FF;
-  color: #1A202C;
   overflow-x: hidden;
 }
 
-.dark body {
-  background: #111827;
-  color: #E5E7EB;
+/* ---------------------------------------------------------------- surfaces */
+
+.card {
+  border: 1px solid rgb(var(--border));
+  border-radius: var(--radius);
+  background: rgb(var(--surface));
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: 'Space Grotesk', sans-serif;
+.card-pad {
+  padding: 20px;
 }
 
-.App {
-  min-height: 100vh;
-  width: 100%;
+/* A card that responds to the pointer. Border only — no lift, no shadow. */
+.card-hover {
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.card-hover:hover {
+  border-color: rgb(var(--border-strong));
 }
 
-html {
-  scroll-behavior: smooth;
+/* A surface that floats above the page. Used for the arriving notification,
+   which has to read as something that landed on top of the screen rather than
+   a region of it. Restrained — depth, not decoration. */
+.lift {
+  box-shadow:
+    0 1px 2px rgb(var(--ink) / 0.04),
+    0 12px 28px -16px rgb(var(--ink) / 0.18);
 }
 
-::-webkit-scrollbar {
-  width: 8px;
+/* "You can press this." A slow halo rather than a colour change, so the button
+   keeps its weight while still inviting the click. */
+@keyframes asc-invite {
+  0% { box-shadow: 0 0 0 0 rgb(var(--ink) / 0.16); }
+  70% { box-shadow: 0 0 0 12px rgb(var(--ink) / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(var(--ink) / 0); }
+}
+.invite {
+  animation: asc-invite 1.9s ease-out infinite;
 }
 
-::-webkit-scrollbar-track {
-  background: #E8F0FE;
+/*
+ * Frosted surface. A notification is the one thing on this page that has to
+ * read as sitting *over* the screen rather than being part of it — the way an
+ * iOS banner does, semi-transparent with an out-of-focus field behind it.
+ *
+ * Scoped deliberately to the notification. Frosting the cards would be
+ * decoration; here it is doing a job, which is why it can stay translucent
+ * without becoming the glass effect we stripped out everywhere else.
+ */
+.frosted {
+  background: rgb(var(--surface) / 0.88);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
 }
 
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%);
-  border-radius: 4px;
+/* Chrome: nav, sidebar, footer. Sits a step below the page. */
+.chrome {
+  background: rgb(var(--chrome));
+  border-color: rgb(var(--chrome-border));
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #4338CA 0%, #2563EB 100%);
+.panel {
+  border: 1px solid rgb(var(--border));
+  border-radius: var(--radius);
+  background: rgb(var(--surface-2));
 }
 
-.dark ::-webkit-scrollbar-track {
-  background: #1F2937;
+.divider {
+  height: 1px;
+  background: rgb(var(--border));
+  border: 0;
 }
 
-.dark ::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #6366F1 0%, #3B82F6 100%);
-}
+/* ---------------------------------------------------------------- controls */
 
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #818CF8 0%, #60A5FA 100%);
-}
-
-/* Glass effects with blue tint */
-.glass {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 255, 0.92) 100%);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(79, 70, 229, 0.1);
-  box-shadow: 0 8px 32px rgba(79, 70, 229, 0.1), 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.dark .glass {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(21, 32, 56, 0.92) 100%);
-  border: 1px solid rgba(79, 70, 229, 0.2);
-  box-shadow: 0 8px 32px rgba(79, 70, 229, 0.2), 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.glass-dark {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(239, 246, 255, 0.9) 100%);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(79, 70, 229, 0.15);
-  box-shadow: 0 4px 24px rgba(79, 70, 229, 0.12);
-}
-
-.dark .glass-dark {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(21, 32, 56, 0.9) 100%);
-  border: 1px solid rgba(79, 70, 229, 0.25);
-  box-shadow: 0 4px 24px rgba(79, 70, 229, 0.22);
-}
-
-/* Pattern background */
-.pattern-dots {
-  background-image: radial-gradient(circle, rgba(79, 70, 229, 0.08) 1px, transparent 1px);
-  background-size: 20px 20px;
-}
-
-.pattern-grid {
-  background-image: linear-gradient(rgba(79, 70, 229, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(79, 70, 229, 0.05) 1px, transparent 1px);
-  background-size: 30px 30px;
-}
-
-/* Animations */
-@keyframes float {
-
-  0%,
-  100% {
-    transform: translateY(0px) rotate(0deg);
-  }
-
-  50% {
-    transform: translateY(-25px) rotate(5deg);
-  }
-}
-
-@keyframes pulse-glow {
-
-  0%,
-  100% {
-    box-shadow: 0 0 30px rgba(79, 70, 229, 0.3);
-  }
-
-  50% {
-    box-shadow: 0 0 50px rgba(79, 70, 229, 0.5);
-  }
-}
-
-@keyframes gradient-shift {
-
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-.animate-float {
-  animation: float 8s ease-in-out infinite;
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 3s ease-in-out infinite;
-}
-
-.animate-gradient {
-  background-size: 200% 200%;
-  animation: gradient-shift 6s ease infinite;
-}
-
-/* Hover effects */
-.hover-lift {
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.hover-lift:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(79, 70, 229, 0.2);
-}
-
-button,
-a {
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: var(--fs-ui);
+  font-weight: 500;
   cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
-/* Card shine effect */
-.card-shine {
-  position: relative;
+/* Primary is ink, not a brand colour. One dark button per view, at most. */
+.btn-primary {
+  background: rgb(var(--ink));
+  color: rgb(var(--surface));
+  border-color: rgb(var(--ink));
+}
+.btn-primary:hover:not(:disabled) {
+  background: rgb(var(--ink-muted));
+  border-color: rgb(var(--ink-muted));
+}
+
+.btn-secondary {
+  background: rgb(var(--surface));
+  color: rgb(var(--ink));
+  border-color: rgb(var(--border-strong));
+}
+.btn-secondary:hover:not(:disabled) {
+  background: rgb(var(--surface-3));
+}
+
+.btn-ghost {
+  background: transparent;
+  color: rgb(var(--ink-muted));
+  border-color: transparent;
+}
+.btn-ghost:hover:not(:disabled) {
+  background: rgb(var(--surface-3));
+  color: rgb(var(--ink));
+}
+
+.btn-danger {
+  background: rgb(var(--red-tint));
+  color: rgb(var(--red));
+  border-color: rgb(var(--red-line));
+}
+.btn-danger:hover:not(:disabled) {
+  border-color: rgb(var(--red));
+}
+
+/* ---------------------------------------------------------------- status */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+.pill-red   { background: rgb(var(--red-tint));   color: rgb(var(--red));   border-color: rgb(var(--red-line)); }
+.pill-amber { background: rgb(var(--amber-tint)); color: rgb(var(--amber)); border-color: rgb(var(--amber-line)); }
+.pill-teal  { background: rgb(var(--teal-tint));  color: rgb(var(--teal));  border-color: rgb(var(--teal-line)); }
+.pill-blue  { background: rgb(var(--blue-tint));  color: rgb(var(--blue));  border-color: rgb(var(--blue-line)); }
+.pill-gray  { background: rgb(var(--gray-tint));  color: rgb(var(--gray));  border-color: rgb(var(--gray-line)); }
+
+/* A left-ruled note: the block-level counterpart of a pill. */
+.note {
+  border: 1px solid rgb(var(--border));
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  font-size: var(--fs-ui);
+  background: rgb(var(--surface-2));
+}
+.note-red   { border-left-color: rgb(var(--red));   background: rgb(var(--red-tint)); }
+.note-amber { border-left-color: rgb(var(--amber)); background: rgb(var(--amber-tint)); }
+.note-teal  { border-left-color: rgb(var(--teal));  background: rgb(var(--teal-tint)); }
+.note-blue  { border-left-color: rgb(var(--blue));  background: rgb(var(--blue-tint)); }
+
+/* ---------------------------------------------------------------- forms */
+
+.field {
+  width: 100%;
+  min-height: 38px;
+  padding: 9px 11px;
+  border: 1px solid rgb(var(--border-strong));
+  border-radius: var(--radius);
+  background: rgb(var(--surface));
+  color: rgb(var(--ink));
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: var(--fs-base);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.field::placeholder {
+  color: rgb(var(--ink-faint));
+}
+.field:hover {
+  border-color: rgb(var(--ink-faint));
+}
+.field:focus {
+  outline: none;
+  border-color: rgb(var(--focus));
+  box-shadow: 0 0 0 3px rgb(var(--blue-tint));
+}
+
+/* ---------------------------------------------------------------- data */
+
+/* Numbers in a column must not jitter as they change. */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-ui);
+}
+.data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgb(var(--border));
+  background: rgb(var(--surface-2));
+  color: rgb(var(--ink-muted));
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+}
+.data-table tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgb(var(--border));
+  vertical-align: middle;
+}
+.data-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.data-table tbody tr:hover {
+  background: rgb(var(--surface-2));
+}
+
+/* A label/value pair. The value carries tabular figures. */
+.stat-value {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: var(--fs-metric);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: rgb(var(--ink));
+}
+.stat-label {
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: rgb(var(--ink-muted));
+}
+
+/* Meter — a filled rule, not a glowing bar. */
+.meter {
+  height: 6px;
+  border-radius: 999px;
+  background: rgb(var(--surface-3));
   overflow: hidden;
 }
-
-.card-shine::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
+.meter-fill {
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  transition: left 0.5s;
+  border-radius: 999px;
+  transition: width 0.4s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.card-shine:hover::before {
-  left: 100%;
+/* ---------------------------------------------------------------- misc */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgb(var(--surface-3)) 25%,
+    rgb(var(--surface-2)) 37%,
+    rgb(var(--surface-3)) 63%
+  );
+  background-size: 400% 100%;
+  animation: skeleton-sweep 1.4s ease infinite;
+  border-radius: 4px;
+}
+@keyframes skeleton-sweep {
+  0% { background-position: 100% 50%; }
+  100% { background-position: 0 50%; }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }

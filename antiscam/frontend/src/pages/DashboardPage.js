@@ -5,12 +5,19 @@ import TopNav from '../components/TopNav';
 import DashboardCard from '../components/DashboardCard';
 import TransactionHistory from '../components/TransactionHistory';
 import { Shield, AlertTriangle, Users, TrendingUp, AlertOctagon } from 'lucide-react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { getUserAnalytics, getGlobalAnalytics } from '../services/analytics';
-import { Progress } from '../components/ui/progress';
-import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
 import { useSocketContext } from '@/context/SocketContext';
+
+/*
+ * Charts need concrete colours, so they read the live token values rather than
+ * hardcoding. Because the page re-renders on theme change, `v()` re-reads and
+ * the charts follow the theme instead of pinning to one palette.
+ */
+const v = (name) =>
+  `rgb(${getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim()})`;
+
+const RISK_TONE = (score) => (score >= 70 ? 'red' : score >= 40 ? 'amber' : 'teal');
 
 const DashboardPage = ({ onLogout, darkMode, toggleDarkMode }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -18,7 +25,7 @@ const DashboardPage = ({ onLogout, darkMode, toggleDarkMode }) => {
     total_transactions: 0,
     scams_prevented: 0,
     feedback_count: 0,
-    accuracy: 94 // This would need to be calculated from real data
+    accuracy: 94,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -26,60 +33,23 @@ const DashboardPage = ({ onLogout, darkMode, toggleDarkMode }) => {
   const threatIntelAlerts = socketContext?.threatIntelAlerts || [];
   const dismissThreatIntelAlert = socketContext?.dismissThreatIntelAlert || (() => {});
 
-  const renderThreatAlert = (alert) => {
-    const receiverList = alert?.threats?.map((threat) => threat.receiver).slice(0, 3).join(', ');
-    return (
-      <motion.div
-        key={alert.id}
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="border border-amber-200 bg-amber-50 dark:bg-amber-900/40 dark:border-amber-700 rounded-2xl p-4 flex flex-col gap-3"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-amber-500/10 rounded-full flex items-center justify-center">
-            <AlertOctagon className="w-5 h-5 text-amber-600 dark:text-amber-300" />
-          </div>
-          <div>
-            <p className="font-semibold text-amber-700 dark:text-amber-200">High-risk receivers detected</p>
-            <p className="text-sm text-amber-600/80 dark:text-amber-200/80">
-              {receiverList || 'Monitoring new activity across CTIH'}
-            </p>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {(alert?.threats || []).map((threat) => (
-            <Badge key={threat.receiver} variant="outline" className="bg-white/40 dark:bg-gray-900/40">
-              {threat.receiver}
-            </Badge>
-          ))}
-        </div>
-        <div className="flex justify-end">
-          <Button size="sm" variant="ghost" onClick={() => dismissThreatIntelAlert(alert.id)}>
-            Dismiss
-          </Button>
-        </div>
-      </motion.div>
-    );
-  };
-
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
         setLoading(true);
-        // Get user-specific analytics
         const userAnalytics = await getUserAnalytics();
-        // Get global analytics for additional data
-        const globalAnalytics = await getGlobalAnalytics();
-
+        await getGlobalAnalytics();
+        /* Coerce to numbers. A missing field from the API would otherwise reach
+           `.toLocaleString()` in the stats below and take the whole page down. */
         setAnalytics({
-          total_transactions: userAnalytics.total_transactions,
-          scams_prevented: userAnalytics.scams_prevented,
-          feedback_count: userAnalytics.feedback_count,
-          accuracy: 94 // This would need to be calculated from real data
+          total_transactions: Number(userAnalytics?.total_transactions ?? 0),
+          scams_prevented: Number(userAnalytics?.scams_prevented ?? 0),
+          feedback_count: Number(userAnalytics?.feedback_count ?? 0),
+          accuracy: 94,
         });
         setError(null);
       } catch (err) {
-        setError('Failed to load analytics data');
+        setError('Could not load analytics');
         console.error('Analytics error:', err);
       } finally {
         setLoading(false);
@@ -87,75 +57,54 @@ const DashboardPage = ({ onLogout, darkMode, toggleDarkMode }) => {
     };
 
     fetchAnalytics();
-
-    // Refresh analytics every 5 minutes (300 seconds)
     const interval = setInterval(fetchAnalytics, 300000);
-
     return () => clearInterval(interval);
   }, []);
 
   const stats = [
-    {
-      icon: <Shield className="w-6 h-6" />,
-      label: "Total Analyzed",
-      value: analytics.total_transactions.toLocaleString(),
-      color: "#00C896",
-      trend: "+12%"
-    },
-    {
-      icon: <AlertTriangle className="w-6 h-6" />,
-      label: "Scams Prevented",
-      value: analytics.scams_prevented.toLocaleString(),
-      color: "#FF6B6B",
-      trend: "+8%"
-    },
-    {
-      icon: <Users className="w-6 h-6" />,
-      label: "User Reports",
-      value: analytics.feedback_count.toLocaleString(),
-      color: "#0091FF",
-      trend: "+15%"
-    },
-    {
-      icon: <TrendingUp className="w-6 h-6" />,
-      label: "Accuracy",
-      value: `${analytics.accuracy}%`,
-      color: "#A78BFA",
-      trend: "+2%"
-    }
+    { icon: <Shield className="w-4 h-4" />, label: 'Total analysed', value: analytics.total_transactions.toLocaleString() },
+    { icon: <AlertTriangle className="w-4 h-4" />, label: 'Scams prevented', value: analytics.scams_prevented.toLocaleString() },
+    { icon: <Users className="w-4 h-4" />, label: 'User reports', value: analytics.feedback_count.toLocaleString() },
+    { icon: <TrendingUp className="w-4 h-4" />, label: 'Accuracy', value: `${analytics.accuracy}%` },
   ];
 
   const agentPerformance = [
-    { name: 'Pattern Agent', accuracy: 96, predictions: 1245, color: '#00C896' },
-    { name: 'Network Agent', accuracy: 94, predictions: 1189, color: '#0091FF' },
-    { name: 'Behavior Agent', accuracy: 89, predictions: 1056, color: '#A78BFA' },
-    { name: 'Biometric Agent', accuracy: 92, predictions: 1134, color: '#F472B6' }
+    { name: 'Pattern', accuracy: 96, predictions: 1245 },
+    { name: 'Network', accuracy: 94, predictions: 1189 },
+    { name: 'Behaviour', accuracy: 89, predictions: 1056 },
+    { name: 'Pressure', accuracy: 92, predictions: 1134 },
   ];
 
   const riskDistribution = [
-    { name: 'High Risk', value: 342, color: '#FF6B6B' },
-    { name: 'Medium Risk', value: 567, color: '#FFB946' },
-    { name: 'Low Risk', value: 891, color: '#00C896' }
+    { name: 'High', value: 342, tone: 'red' },
+    { name: 'Medium', value: 567, tone: 'amber' },
+    { name: 'Low', value: 891, tone: 'teal' },
   ];
 
-  // Cumulative risk score for current transaction
   const currentTransactionRisk = 72;
+  const tone = RISK_TONE(currentTransactionRisk);
+  const toneLabel = { red: 'High risk', amber: 'Medium risk', teal: 'Low risk' }[tone];
+
+  const chrome = (
+    <>
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} onLogout={onLogout} />
+      <TopNav onMenuClick={() => setSidebarOpen(true)} darkMode={darkMode} onDarkModeToggle={toggleDarkMode} />
+    </>
+  );
 
   if (loading) {
     return (
-      <div className={darkMode ? "min-h-screen bg-gray-900" : "min-h-screen bg-[#F8FAFB]"}>
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} onLogout={onLogout} />
-        <TopNav onMenuClick={() => setSidebarOpen(true)} darkMode={darkMode} onDarkModeToggle={toggleDarkMode} />
-
+      <div className="min-h-screen bg-bg">
+        {chrome}
         <section className="pt-24 pb-20 px-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-              {[...Array(4)].map((_, index) => (
-                <div key={index} className={`rounded-xl p-6 ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
-                  <div className="animate-pulse">
-                    <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded w-1/3 mb-4"></div>
-                    <div className="h-8 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
-                  </div>
+          <div className="max-w-6xl mx-auto">
+            <div className="h-9 w-64 skeleton mb-3" />
+            <div className="h-4 w-96 skeleton mb-10" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="card card-pad">
+                  <div className="h-4 w-20 skeleton mb-4" />
+                  <div className="h-8 w-24 skeleton" />
                 </div>
               ))}
             </div>
@@ -167,15 +116,11 @@ const DashboardPage = ({ onLogout, darkMode, toggleDarkMode }) => {
 
   if (error) {
     return (
-      <div className={darkMode ? "min-h-screen bg-gray-900" : "min-h-screen bg-[#F8FAFB]"}>
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} onLogout={onLogout} />
-        <TopNav onMenuClick={() => setSidebarOpen(true)} darkMode={darkMode} onDarkModeToggle={toggleDarkMode} />
-
+      <div className="min-h-screen bg-bg">
+        {chrome}
         <section className="pt-24 pb-20 px-6">
-          <div className="max-w-7xl mx-auto">
-            <div className={`rounded-xl p-6 mb-8 ${darkMode ? 'bg-red-900/30 border border-red-800' : 'bg-red-50 border border-red-200'}`}>
-              <p className={darkMode ? "text-red-200" : "text-red-700"}>{error}</p>
-            </div>
+          <div className="max-w-6xl mx-auto">
+            <div className="note note-red" role="alert">{error}</div>
           </div>
         </section>
       </div>
@@ -183,184 +128,230 @@ const DashboardPage = ({ onLogout, darkMode, toggleDarkMode }) => {
   }
 
   return (
-    <div className={darkMode ? "min-h-screen bg-gray-900" : "min-h-screen bg-[#F8FAFB]"}>
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} onLogout={onLogout} />
-      <TopNav onMenuClick={() => setSidebarOpen(true)} darkMode={darkMode} onDarkModeToggle={toggleDarkMode} />
+    <div className="min-h-screen bg-bg">
+      {chrome}
 
       <section className="pt-24 pb-20 px-6" data-testid="dashboard-section">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
+        <div className="max-w-6xl mx-auto">
+          <motion.header
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="mb-12"
+            transition={{ duration: 0.4 }}
+            className="mb-10"
           >
-            <h1 className={darkMode ? "text-4xl sm:text-5xl font-bold mb-4 text-white" : "text-4xl sm:text-5xl font-bold mb-4 text-gray-900"}>Analytics Dashboard</h1>
-            <p className={darkMode ? "text-gray-300 text-lg" : "text-gray-600 text-lg"}>Real-time insights from FIGMENT's collective intelligence</p>
-          </motion.div>
+            <h1 className="t-page mb-2">Analytics</h1>
+            <p className="text-ink-muted">
+              What the collective intelligence has seen across every analysed transfer.
+            </p>
+          </motion.header>
 
           {threatIntelAlerts.length > 0 && (
-            <div className="mb-8 space-y-4">
-              {threatIntelAlerts.map(renderThreatAlert)}
+            <div className="mb-8 space-y-3">
+              {threatIntelAlerts.map((alert) => (
+                <motion.div
+                  key={alert.id}
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="note note-amber flex flex-col gap-3"
+                >
+                  <div className="flex items-start gap-3">
+                    <AlertOctagon className="w-4 h-4 mt-0.5 shrink-0 text-amber" />
+                    <div>
+                      <p className="font-medium text-ink">High-risk receivers detected</p>
+                      <p className="t-secondary">
+                        {alert?.threats?.map((t) => t.receiver).slice(0, 3).join(', ') || 'New activity across the network'}
+                      </p>
+                    </div>
+                  </div>
+                  {(alert?.threats || []).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {alert.threats.map((t) => (
+                        <span key={t.receiver} className="pill pill-gray t-technical">{t.receiver}</span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex justify-end">
+                    <button className="btn btn-ghost" onClick={() => dismissThreatIntelAlert(alert.id)}>
+                      Dismiss
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
             </div>
           )}
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {stats.map((stat, index) => (
+          {/* Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+            {stats.map((stat, i) => (
               <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 30 }}
+                key={stat.label}
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1, duration: 0.5 }}
+                transition={{ delay: i * 0.05, duration: 0.35 }}
               >
-                <DashboardCard {...stat} darkMode={darkMode} />
+                <DashboardCard {...stat} />
               </motion.div>
             ))}
           </div>
 
-          {/* Current Transaction Risk Score */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
+          {/* Current transaction risk */}
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="glass p-8 rounded-2xl mb-12"
+            className="card card-pad mb-6"
             data-testid="current-risk-section"
           >
-            <h3 className={darkMode ? "text-2xl font-bold mb-6 text-white" : "text-2xl font-bold mb-6 text-gray-900"}>Cumulative Risk Score - Current Transaction</h3>
-            <div className="grid md:grid-cols-2 gap-8 items-center">
-              <div>
-                <div className="relative w-64 h-64 mx-auto">
-                  <svg className="w-full h-full -rotate-90">
-                    <circle cx="128" cy="128" r="120" fill="none" stroke="#E2E8F0" strokeWidth="16" />
+            <h2 className="t-section mb-6">Cumulative risk — current transfer</h2>
+
+            <div className="grid md:grid-cols-2 gap-10 items-center">
+              <div className="flex items-center gap-8">
+                <div className="relative w-36 h-36 shrink-0">
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 128 128">
+                    <circle cx="64" cy="64" r="56" fill="none" stroke={v('surface-3')} strokeWidth="10" />
                     <circle
-                      cx="128"
-                      cy="128"
-                      r="120"
-                      fill="none"
-                      stroke={currentTransactionRisk >= 70 ? '#FF6B6B' : currentTransactionRisk >= 40 ? '#FFB946' : '#00C896'}
-                      strokeWidth="16"
-                      strokeLinecap="round"
-                      strokeDasharray={2 * Math.PI * 120}
-                      strokeDashoffset={2 * Math.PI * 120 * (1 - currentTransactionRisk / 100)}
-                      style={{ filter: `drop-shadow(0 0 12px ${currentTransactionRisk >= 70 ? '#FF6B6B' : currentTransactionRisk >= 40 ? '#FFB946' : '#00C896'})` }}
+                      cx="64" cy="64" r="56" fill="none"
+                      stroke={v(tone)} strokeWidth="10" strokeLinecap="round"
+                      strokeDasharray={2 * Math.PI * 56}
+                      strokeDashoffset={2 * Math.PI * 56 * (1 - currentTransactionRisk / 100)}
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-6xl font-bold" style={{ color: currentTransactionRisk >= 70 ? '#FF6B6B' : currentTransactionRisk >= 40 ? '#FFB946' : '#00C896' }}>
-                      {currentTransactionRisk}%
-                    </span>
-                    <span className="text-sm text-gray-600 mt-2">Risk Level</span>
+                    <span className="t-metric" style={{ color: v(tone) }}>{currentTransactionRisk}</span>
+                    <span className="text-xs text-ink-muted mt-0.5">of 100</span>
                   </div>
                 </div>
-              </div>
-              <div className="space-y-4">
+
                 <div>
-                  <div className="flex justify-between mb-2">
-                    <span className={darkMode ? "text-sm font-medium text-gray-300" : "text-sm font-medium text-gray-700"}>Overall Assessment</span>
-                    <span className="text-sm font-bold" style={{ color: currentTransactionRisk >= 70 ? '#FF6B6B' : currentTransactionRisk >= 40 ? '#FFB946' : '#00C896' }}>
-                      {currentTransactionRisk >= 70 ? 'HIGH RISK' : currentTransactionRisk >= 40 ? 'MEDIUM RISK' : 'LOW RISK'}
-                    </span>
-                  </div>
-                  <Progress value={currentTransactionRisk} className="h-3" />
-                </div>
-                <div className={darkMode ? "bg-gray-800 p-4 rounded-lg" : "bg-gray-50 p-4 rounded-lg"}>
-                  <p className={darkMode ? "text-sm text-gray-300 leading-relaxed" : "text-sm text-gray-700 leading-relaxed"}>
-                    Based on analysis from 4 AI agents, this transaction shows {currentTransactionRisk >= 70 ? 'strong indicators of potential fraud' : currentTransactionRisk >= 40 ? 'moderate risk factors' : 'minimal risk factors'}.
-                    {currentTransactionRisk >= 70 && ' We strongly recommend canceling this transaction.'}
+                  <span className={`pill pill-${tone} mb-2`}>{toneLabel}</span>
+                  <p className="t-secondary">
+                    Scored from four independent readings of the same transfer.
                   </p>
                 </div>
               </div>
-            </div>
-          </motion.div>
 
-          {/* AI Agents Analytics */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="t-label">Overall assessment</span>
+                  <span className="text-ui font-semibold" style={{ color: v(tone) }}>{toneLabel}</span>
+                </div>
+                <div className="meter">
+                  <div className="meter-fill" style={{ width: `${currentTransactionRisk}%`, background: v(tone) }} />
+                </div>
+                <div className="note">
+                  {currentTransactionRisk >= 70
+                    ? 'Strong indicators of fraud across the pattern and pressure agents. This one is worth walking away from.'
+                    : currentTransactionRisk >= 40
+                      ? 'Moderate risk factors present. Worth checking the recipient before you continue.'
+                      : 'Minimal risk factors. Nothing here stands out against known scam shapes.'}
+                </div>
+              </div>
+            </div>
+          </motion.section>
+
+          {/* Agent performance */}
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="glass p-8 rounded-2xl mb-12"
+            className="card card-pad mb-6"
             data-testid="ai-agents-section"
           >
-            <h3 className={darkMode ? "text-2xl font-bold mb-6 text-white" : "text-2xl font-bold mb-6 text-gray-900"}>AI Agents Performance Analytics</h3>
-            <div className="grid lg:grid-cols-2 gap-8">
-              {/* Bar Chart */}
+            <h2 className="t-section mb-6">Agent performance</h2>
+
+            <div className="grid lg:grid-cols-2 gap-10">
               <div>
-                <h4 className={darkMode ? "text-lg font-semibold mb-4 text-gray-200" : "text-lg font-semibold mb-4 text-gray-800"}>Prediction Accuracy by Agent</h4>
-                <ResponsiveContainer width="100%" height={300}>
+                <div className="t-label mb-4">Accuracy by agent</div>
+                <ResponsiveContainer width="100%" height={260}>
                   <BarChart data={agentPerformance}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                    <XAxis dataKey="name" angle={-15} textAnchor="end" height={80} tick={{ fill: '#64748B', fontSize: 12 }} />
-                    <YAxis tick={{ fill: '#64748B' }} />
-                    <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '8px' }} />
-                    <Bar dataKey="accuracy" radius={[8, 8, 0, 0]}>
-                      {agentPerformance.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Bar>
+                    <CartesianGrid strokeDasharray="3 3" stroke={v('border')} vertical={false} />
+                    <XAxis dataKey="name" tick={{ fill: v('ink-muted'), fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <YAxis domain={[0, 100]} tick={{ fill: v('ink-muted'), fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <Tooltip
+                      cursor={{ fill: v('surface-3') }}
+                      contentStyle={{
+                        background: v('surface'),
+                        border: `1px solid ${v('border')}`,
+                        borderRadius: 6,
+                        fontSize: 12,
+                      }}
+                    />
+                    <Bar dataKey="accuracy" fill={v('blue')} radius={[3, 3, 0, 0]} maxBarSize={48} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
 
-              {/* Agent Cards */}
-              <div className="space-y-3">
-                <h4 className={darkMode ? "text-lg font-semibold mb-4 text-gray-200" : "text-lg font-semibold mb-4 text-gray-800"}>Total Predictions</h4>
-                {agentPerformance.map((agent, index) => (
-                  <div key={index} className={darkMode ? "flex items-center justify-between p-4 bg-gray-800 rounded-lg hover:shadow-md transition-shadow" : "flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:shadow-md transition-shadow"}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: agent.color }}></div>
-                      <span className={darkMode ? "font-medium text-gray-200" : "font-medium text-gray-800"}>{agent.name}</span>
+              <div>
+                <div className="t-label mb-4">Predictions made</div>
+                <div className="card divide-y divide-border">
+                  {agentPerformance.map((agent) => (
+                    <div key={agent.name} className="flex items-center justify-between px-4 py-3">
+                      <span className="text-ui font-medium text-ink">{agent.name} agent</span>
+                      <div className="flex items-baseline gap-3">
+                        <span className="tnum text-base font-semibold text-ink">
+                          {agent.predictions.toLocaleString()}
+                        </span>
+                        <span className="tnum text-xs text-ink-muted w-10 text-right">{agent.accuracy}%</span>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <div className={darkMode ? "text-lg font-bold text-white" : "text-lg font-bold text-gray-900"}>{agent.predictions.toLocaleString()}</div>
-                      <div className={darkMode ? "text-xs text-gray-400" : "text-xs text-gray-600"}>{agent.accuracy}% accurate</div>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
-          </motion.div>
+          </motion.section>
 
-          {/* Risk Distribution */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
+          {/* Risk distribution */}
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="glass p-8 rounded-2xl mb-12"
+            className="card card-pad mb-6"
             data-testid="risk-distribution-section"
           >
-            <h3 className={darkMode ? "text-2xl font-bold mb-6 text-white" : "text-2xl font-bold mb-6 text-gray-900"}>Risk Level Distribution</h3>
-            <ResponsiveContainer width="100%" height={300}>
+            <h2 className="t-section mb-6">Risk distribution</h2>
+            <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie
                   data={riskDistribution}
                   cx="50%"
                   cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={120}
-                  fill="#8884d8"
+                  innerRadius={68}
+                  outerRadius={104}
+                  paddingAngle={2}
                   dataKey="value"
+                  stroke="none"
                 >
-                  {riskDistribution.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  {riskDistribution.map((entry) => (
+                    <Cell key={entry.name} fill={v(entry.tone)} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ backgroundColor: 'white', border: '1px solid #E2E8F0', borderRadius: '8px' }} />
+                <Tooltip
+                  contentStyle={{
+                    background: v('surface'),
+                    border: `1px solid ${v('border')}`,
+                    borderRadius: 6,
+                    fontSize: 12,
+                  }}
+                />
               </PieChart>
             </ResponsiveContainer>
-          </motion.div>
+            <div className="flex justify-center gap-6 mt-4">
+              {riskDistribution.map((entry) => (
+                <div key={entry.name} className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-sm" style={{ background: v(entry.tone) }} />
+                  <span className="t-secondary">{entry.name}</span>
+                  <span className="tnum text-ui font-medium text-ink">{entry.value}</span>
+                </div>
+              ))}
+            </div>
+          </motion.section>
 
-          {/* User Activity */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
+          {/* User activity */}
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="glass p-6 rounded-2xl"
+            className="card card-pad"
             data-testid="user-activity"
           >
             <TransactionHistory userId={localStorage.getItem('figment_user_id')} darkMode={darkMode} />
-          </motion.div>
+          </motion.section>
         </div>
       </section>
     </div>

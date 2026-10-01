@@ -1,17 +1,21 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation } from 'react-router-dom';
 import { Shield, LayoutDashboard, Sparkles, BarChart3, LogOut, X, BrainCircuit } from 'lucide-react';
-import { Button } from './ui/button';
 import APP_ROUTES from '@/routes';
 
+/**
+ * Application navigation. The active item is marked with a fill and an ink
+ * weight change — not a coloured gradient — so "where am I" reads at a glance
+ * without the rail competing with the content for attention.
+ */
 const Sidebar = ({ isOpen, onClose, onLogout }) => {
   const location = useLocation();
 
   const menuItems = [
-    { name: 'Dashboard', path: APP_ROUTES.dashboard, icon: <LayoutDashboard className="w-5 h-5" /> },
-    { name: 'Threat Intelligence Hub', path: APP_ROUTES.threatIntel, icon: <BrainCircuit className="w-5 h-5" /> },
-    { name: 'Try Demo', path: APP_ROUTES.demo, icon: <Sparkles className="w-5 h-5" /> },
-    { name: 'AI Analysis', path: APP_ROUTES.aiAnalysis, icon: <BarChart3 className="w-5 h-5" /> },
+    { name: 'Dashboard', path: APP_ROUTES.dashboard, icon: LayoutDashboard },
+    { name: 'Threat Intelligence Hub', path: APP_ROUTES.threatIntel, icon: BrainCircuit },
+    { name: 'Try Demo', path: APP_ROUTES.demo, icon: Sparkles },
+    { name: 'AI Analysis', path: APP_ROUTES.aiAnalysis, icon: BarChart3 },
   ];
 
   return (
@@ -23,66 +27,67 @@ const Sidebar = ({ isOpen, onClose, onLogout }) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
+            className="fixed inset-0 z-40 bg-ink/40"
             data-testid="sidebar-overlay"
           />
 
           <motion.div
-            initial={{ x: -300 }}
+            initial={{ x: -320 }}
             animate={{ x: 0 }}
-            exit={{ x: -300 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed left-0 top-0 h-full w-80 glass z-50 shadow-2xl border-r border-indigo-200 dark:border-gray-700"
+            exit={{ x: -320 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 260 }}
+            className="chrome fixed left-0 top-0 h-full w-72 z-50 border-r flex flex-col"
             data-testid="sidebar"
           >
-            <div className="flex flex-col h-full">
-              <div className="flex items-center justify-between p-6 border-b border-indigo-200/50 dark:border-gray-700 bg-gradient-to-r from-indigo-50/50 to-blue-50/50 dark:from-gray-800 dark:to-gray-900">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-blue-500 rounded-lg flex items-center justify-center shadow-lg">
-                    <Shield className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="text-2xl font-bold text-gray-900 dark:text-white">FIGMENT</span>
+            <div className="flex items-center justify-between h-14 px-5 border-b border-chrome-border">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-md bg-ink flex items-center justify-center">
+                  <Shield className="w-3.5 h-3.5 text-surface" strokeWidth={2.25} />
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onClose}
-                  className="hover:bg-indigo-100 dark:hover:bg-gray-700"
-                  data-testid="close-sidebar-btn"
-                >
-                  <X className="w-6 h-6 text-gray-900 dark:text-white" />
-                </Button>
+                <span className="text-ui font-semibold tracking-tight text-ink">Figment</span>
               </div>
+              <button
+                className="btn btn-ghost px-2 -mr-2"
+                onClick={onClose}
+                aria-label="Close navigation"
+                data-testid="close-sidebar-btn"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
 
-              <nav className="flex-1 p-4 space-y-2">
-                {menuItems.map((item) => (
+            <nav className="flex-1 p-3 space-y-0.5">
+              {menuItems.map((item) => {
+                const active = location.pathname === item.path;
+                const Icon = item.icon;
+                return (
                   <Link
                     key={item.path}
                     to={item.path}
                     onClick={onClose}
                     data-testid={`sidebar-link-${item.name.toLowerCase().replace(/ /g, '-')}`}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${location.pathname === item.path
-                      ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-lg shadow-indigo-500/50'
-                      : 'text-gray-700 hover:bg-indigo-50 dark:text-gray-300 dark:hover:bg-gray-800'
-                      }`}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-md text-ui transition-colors ${
+                      active
+                        ? 'bg-surface text-ink font-semibold'
+                        : 'text-ink-muted font-medium hover:bg-chrome-2 hover:text-ink'
+                    }`}
                   >
-                    {item.icon}
+                    <Icon className="w-4 h-4 shrink-0" />
                     <span>{item.name}</span>
                   </Link>
-                ))}
-              </nav>
+                );
+              })}
+            </nav>
 
-              <div className="p-4 border-t border-indigo-200/50 dark:border-gray-700">
-                <Button
-                  onClick={onLogout}
-                  variant="outline"
-                  className="w-full justify-start gap-3 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-900/50 dark:hover:text-red-300 dark:hover:border-red-700"
-                  data-testid="logout-btn"
-                >
-                  <LogOut className="w-5 h-5" />
-                  <span>Logout</span>
-                </Button>
-              </div>
+            <div className="p-3 border-t border-chrome-border">
+              <button
+                onClick={onLogout}
+                className="btn btn-ghost w-full justify-start"
+                data-testid="logout-btn"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Log out</span>
+              </button>
             </div>
           </motion.div>
         </>

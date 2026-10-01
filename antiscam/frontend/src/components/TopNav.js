@@ -1,36 +1,39 @@
-import { Shield, Menu, Moon, Sun } from 'lucide-react';
-import { Button } from './ui/button';
+import { Moon, Sun, Menu, Shield } from 'lucide-react';
 
+/**
+ * Application top bar. The menu button is the only chrome-level control the
+ * user touches on every screen, so it carries the ink weight; the theme toggle
+ * stays quiet beside it.
+ */
 const TopNav = ({ onMenuClick, darkMode, onDarkModeToggle }) => {
   return (
-    <nav className="fixed top-0 left-0 right-0 z-30 glass-dark border-b border-indigo-200/50" data-testid="topnav">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
+    <nav className="chrome fixed top-0 left-0 right-0 z-30 border-b" data-testid="topnav">
+      <div className="px-6 h-14 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button
+            className="btn btn-ghost -ml-2 px-2"
             onClick={onMenuClick}
+            aria-label="Open navigation"
             data-testid="menu-btn"
-            className="text-gray-700 hover:text-indigo-600 hover:bg-indigo-50"
           >
-            <Menu className="w-6 h-6" />
-          </Button>
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-600 to-blue-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
-              <Shield className="w-6 h-6 text-white" />
+            <Menu className="w-5 h-5" />
+          </button>
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-md bg-ink flex items-center justify-center">
+              <Shield className="w-3.5 h-3.5 text-surface" strokeWidth={2.25} />
             </div>
-            <span className="text-2xl font-bold text-gray-900 dark:text-white">FIGMENT</span>
+            <span className="text-ui font-semibold tracking-tight text-ink">Figment</span>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
+
+        <button
+          className="btn btn-ghost px-2"
           onClick={onDarkModeToggle}
+          aria-label={darkMode ? 'Switch to light theme' : 'Switch to dark theme'}
           data-testid="dark-mode-toggle"
-          className="text-gray-700 hover:text-indigo-600 hover:bg-indigo-50"
         >
-          {darkMode ? <Sun className="w-6 h-6 text-yellow-400" /> : <Moon className="w-6 h-6" />}
-        </Button>
+          {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        </button>
       </div>
     </nav>
   );

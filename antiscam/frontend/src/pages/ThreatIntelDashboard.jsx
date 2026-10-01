@@ -6,11 +6,7 @@ import ThreatReceiverCard from '@/components/threat-intel/ThreatReceiverCard';
 import ClusterCard from '@/components/threat-intel/ClusterCard';
 import ThreatTimeline from '@/components/threat-intel/ThreatTimeline';
 import { getThreatIntelGlobal, getThreatIntelClusters, getReceiverThreatIntel } from '@/services/api';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { Separator } from '@/components/ui/separator';
 import { RefreshCcw } from 'lucide-react';
 
 const ThreatIntelDashboard = ({ onLogout, darkMode, toggleDarkMode }) => {
@@ -52,7 +48,7 @@ const ThreatIntelDashboard = ({ onLogout, darkMode, toggleDarkMode }) => {
       setClusters(clusterList);
     } catch (err) {
       console.error('Threat intel fetch failed', err);
-      setError('Unable to load threat intelligence data. Please try again later.');
+      setError('Could not load threat intelligence. Try again in a moment.');
     } finally {
       setLoading(false);
     }
@@ -64,7 +60,7 @@ const ThreatIntelDashboard = ({ onLogout, darkMode, toggleDarkMode }) => {
 
   const { emergingClusters, activeClusters, inactiveClusters } = useMemo(() => {
     const now = Date.now();
-    const emergingThreshold = 1000 * 60 * 60 * 24 * 7; // 7 days
+    const emergingThreshold = 1000 * 60 * 60 * 24 * 7;
     const emerging = [];
     const active = [];
     const inactive = [];
@@ -103,24 +99,16 @@ const ThreatIntelDashboard = ({ onLogout, darkMode, toggleDarkMode }) => {
 
     try {
       const data = await getReceiverThreatIntel(receiver);
-      setTimelineState({
-        loading: false,
-        history: data?.history || [],
-        error: null,
-      });
+      setTimelineState({ loading: false, history: data?.history || [], error: null });
     } catch (err) {
       console.error('Receiver intel fetch failed', err);
-      setTimelineState({
-        loading: false,
-        history: [],
-        error: 'Unable to load receiver timeline.',
-      });
+      setTimelineState({ loading: false, history: [], error: 'Could not load this receiver’s timeline.' });
     }
   };
 
-  const renderClusterGrid = (items, emptyMessage, columnClasses = 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6') => {
+  const renderClusterGrid = (items, emptyMessage, columnClasses = 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4') => {
     if (!items.length) {
-      return <p className="text-sm text-muted-foreground">{emptyMessage}</p>;
+      return <p className="t-secondary">{emptyMessage}</p>;
     }
     return (
       <div className={columnClasses}>
@@ -135,62 +123,62 @@ const ThreatIntelDashboard = ({ onLogout, darkMode, toggleDarkMode }) => {
     );
   };
 
+  const SectionHeading = ({ title, note }) => (
+    <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4 pb-3 border-b border-border">
+      <h2 className="t-section">{title}</h2>
+      <p className="t-secondary">{note}</p>
+    </div>
+  );
+
   return (
-    <div className={darkMode ? 'min-h-screen bg-gray-900' : 'min-h-screen bg-[#F8FAFB]'}>
+    <div className="min-h-screen bg-bg">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} onLogout={onLogout} />
       <TopNav onMenuClick={() => setSidebarOpen(true)} darkMode={darkMode} onDarkModeToggle={toggleDarkMode} />
 
       <section className="pt-24 pb-20 px-6">
-        <div className="max-w-7xl mx-auto space-y-8">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
+        <div className="max-w-6xl mx-auto space-y-10">
+          <motion.header
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="flex flex-col gap-4"
+            transition={{ duration: 0.4 }}
           >
-            <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <h1 className={darkMode ? "text-4xl font-bold text-white" : "text-4xl font-bold text-gray-900"}>
-                  Central Threat Intelligence Hub
-                </h1>
-                <p className={darkMode ? "text-gray-300 mt-2" : "text-gray-600 mt-2"}>
-                  Fusion insights from CTIH, driven by all agents + community behavior.
+                <h1 className="t-page mb-2">Threat intelligence</h1>
+                <p className="text-ink-muted max-w-xl">
+                  Receiver reputation and scam clusters, fused from all four agents and
+                  what people report back.
                 </p>
               </div>
-              <Button onClick={fetchThreatIntel} variant="secondary" className="gap-2">
+              <button onClick={fetchThreatIntel} className="btn btn-secondary">
                 <RefreshCcw className="w-4 h-4" />
-                Refresh Intel
-              </Button>
+                Refresh
+              </button>
             </div>
-            <div className="flex items-center gap-3 text-sm text-muted-foreground">
-              <Badge variant="outline">Live</Badge>
-              Updated by Pattern, Network, Behavior, and Biometric agents + CTIH feedback.
+            <div className="flex items-center gap-2 mt-4">
+              <span className="pill pill-teal">
+                <span className="w-1.5 h-1.5 rounded-full bg-teal pulse" />
+                Live
+              </span>
+              <span className="t-secondary">Updated continuously</span>
             </div>
-          </motion.div>
+          </motion.header>
 
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+          {error && <div className="note note-red" role="alert">{error}</div>}
 
-          {/* Trending Threat Receivers */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className={darkMode ? "text-2xl font-semibold text-white" : "text-2xl font-semibold text-gray-900"}>
-                Trending Threat Receivers
-              </h2>
-              <p className="text-sm text-muted-foreground">Sorted by CTIH threat score</p>
-            </div>
-            <Separator />
+          {/* Trending receivers */}
+          <section>
+            <SectionHeading title="Trending receivers" note="By threat score" />
             {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {[...Array(4)].map((_, index) => (
-                  <div key={index} className="h-40 rounded-xl bg-gradient-to-br from-gray-200/40 to-white animate-pulse dark:from-gray-700/30 dark:to-gray-800" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="h-36 skeleton" />
                 ))}
               </div>
+            ) : trending.length === 0 ? (
+              <p className="t-secondary">No flagged receivers right now.</p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {trending.map((item, index) => (
                   <ThreatReceiverCard
                     key={item.receiver}
@@ -205,64 +193,44 @@ const ThreatIntelDashboard = ({ onLogout, darkMode, toggleDarkMode }) => {
                 ))}
               </div>
             )}
-          </div>
+          </section>
 
-          {/* Emerging Clusters */}
           {!loading && emergingClusters.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className={darkMode ? "text-2xl font-semibold text-white" : "text-2xl font-semibold text-gray-900"}>
-                  Emerging Scam Clusters
-                </h2>
-                <p className="text-sm text-muted-foreground">New patterns detected in the last 7 days</p>
-              </div>
-              <Separator />
-              {renderClusterGrid(emergingClusters, 'No emerging scam clusters this week.')}
-            </div>
+            <section>
+              <SectionHeading title="Emerging clusters" note="New in the last 7 days" />
+              {renderClusterGrid(emergingClusters, 'Nothing emerging this week.')}
+            </section>
           )}
 
-          {/* Scam Clusters */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className={darkMode ? "text-2xl font-semibold text-white" : "text-2xl font-semibold text-gray-900"}>
-                Scam Clusters Overview
-              </h2>
-              <p className="text-sm text-muted-foreground">CTIH derived clusters</p>
-            </div>
-            <Separator />
+          <section>
+            <SectionHeading title="Scam clusters" note="Grouped by pattern similarity" />
             {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                {[...Array(4)].map((_, index) => (
-                  <div key={index} className="h-48 rounded-xl bg-gradient-to-br from-gray-200/40 to-white animate-pulse dark:from-gray-700/30 dark:to-gray-800" />
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="h-44 skeleton" />
                 ))}
               </div>
             ) : (
-              renderClusterGrid(activeClusters, 'No active clusters yet.', 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6')
+              renderClusterGrid(activeClusters, 'No active clusters yet.', 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4')
             )}
-          </div>
+          </section>
 
-          {/* Inactive clusters */}
           {!loading && inactiveClusters.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className={darkMode ? "text-2xl font-semibold text-white" : "text-2xl font-semibold text-gray-900"}>
-                  Archived Clusters
-                </h2>
-                <p className="text-sm text-muted-foreground">Clusters that went quiet or below activity threshold</p>
-              </div>
-              <Separator />
-              {renderClusterGrid(inactiveClusters, 'No archived clusters right now.', 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6')}
-            </div>
+            <section>
+              <SectionHeading title="Archived" note="Went quiet or fell below threshold" />
+              {renderClusterGrid(inactiveClusters, 'Nothing archived.', 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4')}
+            </section>
           )}
         </div>
       </section>
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent side="right" className="sm:max-w-2xl overflow-y-auto">
+        <SheetContent side="right" className="sm:max-w-2xl overflow-y-auto scroll-thin">
           <SheetHeader>
-            <SheetTitle>Receiver Threat Timeline</SheetTitle>
-            <SheetDescription>
-              Investigate the historical context for <span className="font-semibold">{selectedReceiver}</span>
+            <SheetTitle className="t-section">Receiver timeline</SheetTitle>
+            <SheetDescription className="t-secondary">
+              Everything reported against{' '}
+              <span className="t-technical text-ink">{selectedReceiver}</span>
             </SheetDescription>
           </SheetHeader>
           <div className="mt-6">
@@ -280,4 +248,3 @@ const ThreatIntelDashboard = ({ onLogout, darkMode, toggleDarkMode }) => {
 };
 
 export default ThreatIntelDashboard;
-

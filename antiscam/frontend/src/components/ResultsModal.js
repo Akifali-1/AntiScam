@@ -1,225 +1,167 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
-import { Button } from './ui/button';
 import AgentCard from './AgentCard';
 import RiskMeter from './RiskMeter';
 import { AlertTriangle, Brain } from 'lucide-react';
 
-const ResultsModal = ({ isOpen, results, onCancel, onProceed, onReport, onClose, darkMode }) => {
+const toneFor = (score) => (score >= 70 ? 'red' : score >= 40 ? 'amber' : 'teal');
+const HEADLINE = {
+  red: 'This reads as a scam',
+  amber: 'Worth a second look',
+  teal: 'Nothing stands out',
+};
+
+const ResultsModal = ({ isOpen, results, onCancel, onProceed, onReport, onClose }) => {
   if (!results) return null;
 
+  const tone = toneFor(results.overallRisk);
+
   const handleProceedClick = () => {
-    onClose(); // Close dialog first
+    onClose();
     setTimeout(() => {
-      onProceed(); // Then trigger proceed
+      onProceed();
     }, 100);
   };
 
+  const cluster = results.threatIntel?.clusterMember || results.threatIntel?.clusterMatch;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={darkMode ? "max-w-4xl max-h-[90vh] overflow-y-auto bg-gray-800 border-2 border-[#00C896]/30 p-0" : "max-w-4xl max-h-[90vh] overflow-y-auto bg-white border-2 border-[#00C896]/30 p-0"} data-testid="results-modal">
-        {/* Hidden title for accessibility */}
-        <DialogTitle className="sr-only">Transaction Risk Analysis Results</DialogTitle>
-        {/* Hidden description for accessibility */}
+      <DialogContent
+        className="max-w-3xl max-h-[90vh] overflow-y-auto p-0 gap-0 scroll-thin"
+        data-testid="results-modal"
+      >
+        <DialogTitle className="sr-only">Transaction risk analysis</DialogTitle>
         <DialogDescription className="sr-only">
-          View the AI analysis results for your transaction risk assessment.
+          The analysis of this transfer across four agents.
         </DialogDescription>
-        <div className={darkMode ? "sticky top-0 bg-gray-800 z-10 border-b border-gray-700 p-6" : "sticky top-0 bg-white z-10 border-b border-gray-200 p-6"}>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <AlertTriangle className={`w-8 h-8 ${results.overallRisk >= 70 ? 'text-red-500' :
-                  results.overallRisk >= 40 ? 'text-orange-500' : 'text-green-500'
-                  }`} />
-                <h2 className={darkMode ? "text-2xl sm:text-3xl font-bold text-white" : "text-2xl sm:text-3xl font-bold text-gray-900"} data-testid="risk-title">
-                  {results.overallRisk >= 70 ? 'High Risk Transaction!' :
-                    results.overallRisk >= 40 ? 'Medium Risk Transaction' : 'Low Risk Transaction'}
-                </h2>
-              </div>
-              <p className={darkMode ? "text-sm text-gray-400" : "text-sm text-gray-600"}>AI analysis complete</p>
+
+        {/* Sticky header */}
+        <div className="sticky top-0 z-10 bg-surface border-b border-border px-6 py-5">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className={`w-5 h-5 text-${tone}`} />
+            <div>
+              <h2 className="t-section" data-testid="risk-title">
+                {HEADLINE[tone]}
+              </h2>
+              <p className="t-secondary">Scored {results.overallRisk} of 100 by four agents.</p>
             </div>
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-5">
           <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
           >
-            <RiskMeter score={results.overallRisk} darkMode={darkMode} />
+            <RiskMeter score={results.overallRisk} />
           </motion.div>
 
-          {/* Trending Threat Alert */}
           {results.threatIntel?.trendingThreat && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05, duration: 0.4 }}
-              className={darkMode ? "bg-red-900/30 border-2 border-red-500/50 rounded-xl p-4" : "bg-red-50 border-2 border-red-500 rounded-xl p-4"}
+              className="note note-red"
             >
               <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className={`w-5 h-5 ${darkMode ? 'text-red-400' : 'text-red-600'}`} />
-                <h3 className={darkMode ? "font-semibold text-red-400" : "font-semibold text-red-600"}>
-                  🚨 Trending Threat Detected
-                </h3>
+                <AlertTriangle className="w-4 h-4 text-red" />
+                <h3 className="text-ui font-medium text-ink">Trending threat</h3>
               </div>
-              <div className={darkMode ? "text-gray-300 text-sm space-y-1" : "text-gray-700 text-sm space-y-1"}>
-                <p>
-                  <strong>Receiver:</strong> {results.threatIntel.trendingThreat.receiver}
-                </p>
-                <p>
-                  <strong>Total Reports:</strong> {results.threatIntel.trendingThreat.totalReports} times
-                </p>
-                <p>
-                  <strong>Threat Score:</strong> {results.threatIntel.trendingThreat.threatScore?.toFixed(1) || 'N/A'}
-                </p>
-                {results.threatIntel.trendingThreat.patternFlags && results.threatIntel.trendingThreat.patternFlags.length > 0 && (
-                  <p>
-                    <strong>Pattern Flags:</strong> {results.threatIntel.trendingThreat.patternFlags.join(', ')}
-                  </p>
+              <dl className="t-secondary space-y-0.5">
+                <div><dt className="inline text-ink-muted">Receiver </dt><dd className="inline t-technical">{results.threatIntel.trendingThreat.receiver}</dd></div>
+                <div><dt className="inline text-ink-muted">Reports </dt><dd className="inline tnum">{results.threatIntel.trendingThreat.totalReports}</dd></div>
+                <div><dt className="inline text-ink-muted">Threat score </dt><dd className="inline tnum">{results.threatIntel.trendingThreat.threatScore?.toFixed(1) || 'N/A'}</dd></div>
+                {results.threatIntel.trendingThreat.patternFlags?.length > 0 && (
+                  <div><dt className="inline text-ink-muted">Flags </dt><dd className="inline">{results.threatIntel.trendingThreat.patternFlags.join(', ')}</dd></div>
                 )}
-              </div>
+              </dl>
             </motion.div>
           )}
 
-          {/* Cluster Member Alert */}
-          {results.threatIntel?.clusterMember && (
+          {cluster && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.08, duration: 0.4 }}
-              className={darkMode ? "bg-orange-900/30 border-2 border-orange-500/50 rounded-xl p-4" : "bg-orange-50 border-2 border-orange-500 rounded-xl p-4"}
+              className="note note-amber"
             >
               <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className={`w-5 h-5 ${darkMode ? 'text-orange-400' : 'text-orange-600'}`} />
-                <h3 className={darkMode ? "font-semibold text-orange-400" : "font-semibold text-orange-600"}>
-                  ⚠️ Known Scam Cluster Member
+                <AlertTriangle className="w-4 h-4 text-amber" />
+                <h3 className="text-ui font-medium text-ink">
+                  {results.threatIntel?.clusterMember ? 'Known scam cluster member' : 'Matches a known pattern'}
                 </h3>
               </div>
-              <div className={darkMode ? "text-gray-300 text-sm space-y-1" : "text-gray-700 text-sm space-y-1"}>
-                <p>
-                  <strong>Cluster:</strong> {results.threatIntel.clusterMember.name}
-                </p>
-                <p>
-                  <strong>Reported:</strong> {results.threatIntel.clusterMember.count} times
-                </p>
-                <p>
-                  <strong>Average Threat Score:</strong> {results.threatIntel.clusterMember.avgScore?.toFixed(1) || 'N/A'}
-                </p>
-                {results.threatIntel.clusterMember.topKeywords && results.threatIntel.clusterMember.topKeywords.length > 0 && (
-                  <p>
-                    <strong>Keywords:</strong> {results.threatIntel.clusterMember.topKeywords.join(', ')}
-                  </p>
+              <dl className="t-secondary space-y-0.5">
+                <div><dt className="inline text-ink-muted">Cluster </dt><dd className="inline">{cluster.name}</dd></div>
+                <div><dt className="inline text-ink-muted">Reported </dt><dd className="inline tnum">{cluster.count} times</dd></div>
+                <div><dt className="inline text-ink-muted">Average threat score </dt><dd className="inline tnum">{cluster.avgScore?.toFixed(1) || 'N/A'}</dd></div>
+                {cluster.similarity != null && (
+                  <div><dt className="inline text-ink-muted">Similarity </dt><dd className="inline tnum">{(cluster.similarity * 100).toFixed(1)}%</dd></div>
                 )}
-              </div>
+                {cluster.topKeywords?.length > 0 && (
+                  <div><dt className="inline text-ink-muted">Keywords </dt><dd className="inline">{cluster.topKeywords.join(', ')}</dd></div>
+                )}
+              </dl>
             </motion.div>
           )}
 
-          {/* Cluster Pattern Match Alert */}
-          {results.threatIntel?.clusterMatch && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1, duration: 0.4 }}
-              className={darkMode ? "bg-orange-900/30 border-2 border-orange-500/50 rounded-xl p-4" : "bg-orange-50 border-2 border-orange-500 rounded-xl p-4"}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className={`w-5 h-5 ${darkMode ? 'text-orange-400' : 'text-orange-600'}`} />
-                <h3 className={darkMode ? "font-semibold text-orange-400" : "font-semibold text-orange-600"}>
-                  ⚠️ Known Scam Pattern Detected
-                </h3>
-              </div>
-              <div className={darkMode ? "text-gray-300 text-sm space-y-1" : "text-gray-700 text-sm space-y-1"}>
-                <p>
-                  <strong>Pattern:</strong> {results.threatIntel.clusterMatch.name}
-                </p>
-                <p>
-                  <strong>Reported:</strong> {results.threatIntel.clusterMatch.count} times
-                </p>
-                <p>
-                  <strong>Average Threat Score:</strong> {results.threatIntel.clusterMatch.avgScore?.toFixed(1) || 'N/A'}
-                </p>
-                {results.threatIntel.clusterMatch.similarity && (
-                  <p>
-                    <strong>Similarity:</strong> {(results.threatIntel.clusterMatch.similarity * 100).toFixed(1)}%
-                  </p>
-                )}
-                {results.threatIntel.clusterMatch.topKeywords && results.threatIntel.clusterMatch.topKeywords.length > 0 && (
-                  <p>
-                    <strong>Keywords:</strong> {results.threatIntel.clusterMatch.topKeywords.join(', ')}
-                  </p>
-                )}
-              </div>
-            </motion.div>
-          )}
-
-          {/* AI Explanation Section */}
-          {results.aiExplanation && results.aiExplanation.length > 0 && results.aiExplanation !== "Sorry, unable to generate explanation at this time." && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.4 }}
-              className={darkMode ? "bg-gray-700/50 border border-gray-600 rounded-xl p-4" : "bg-blue-50 border border-blue-200 rounded-xl p-4"}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <Brain className={`w-5 h-5 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`} />
-                <h3 className={darkMode ? "font-semibold text-blue-400" : "font-semibold text-blue-600"}>AI Explanation</h3>
-              </div>
-              <p className={darkMode ? "text-gray-300 text-sm" : "text-gray-700 text-sm"}>
-                {results.aiExplanation}
-              </p>
-            </motion.div>
-          )}
+          {results.aiExplanation &&
+            results.aiExplanation.length > 0 &&
+            results.aiExplanation !== 'Sorry, unable to generate explanation at this time.' && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="note note-blue"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Brain className="w-4 h-4 text-blue" />
+                  <h3 className="text-ui font-medium text-ink">What the agents saw</h3>
+                </div>
+                <p className="t-secondary">{results.aiExplanation}</p>
+              </motion.div>
+            )}
 
           <div>
-            <h3 className={darkMode ? "text-xl font-semibold mb-4 text-white" : "text-xl font-semibold mb-4 text-gray-900"}>AI Agents Analysis</h3>
-            <div className="space-y-4">
+            <h3 className="t-card mb-3">Agent by agent</h3>
+            <div className="space-y-2.5">
               {results.agents.map((agent, index) => (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, x: -30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1, duration: 0.4 }}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05, duration: 0.3 }}
                 >
-                  <AgentCard agent={agent} darkMode={darkMode} />
+                  <AgentCard agent={agent} />
                 </motion.div>
               ))}
             </div>
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.4 }}
-            className="flex flex-col sm:flex-row gap-4 pt-6"
-          >
-            <Button
+          <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t border-border">
+            <button
               data-testid="cancel-transaction-btn"
               onClick={onCancel}
-              className="flex-1 bg-gradient-to-r from-[#00C896] to-[#0091FF] hover:from-[#00A077] hover:to-[#0075CC] text-white font-semibold py-6 text-lg rounded-xl"
+              className="btn btn-primary flex-1 h-11"
             >
-              Cancel Transaction (Safe Choice)
-            </Button>
-            <Button
+              Cancel the transfer
+            </button>
+            <button
               data-testid="proceed-anyway-btn"
               onClick={handleProceedClick}
-              variant="outline"
-              className="flex-1 border-2 border-orange-500 text-orange-600 hover:bg-orange-50 py-6 text-lg rounded-xl"
+              className="btn btn-secondary flex-1 h-11"
             >
-              Proceed Anyway
-            </Button>
-          </motion.div>
+              Send anyway
+            </button>
+          </div>
 
           {results.overallRisk >= 40 && (
-            <Button
+            <button
               data-testid="report-scam-btn"
               onClick={onReport}
-              variant="outline"
-              className="w-full border-2 border-red-500 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 dark:text-red-400 dark:border-red-400 py-4 rounded-xl"
+              className="btn btn-danger w-full h-10"
             >
-              🚨 Report as Scam
-            </Button>
+              Report this as a scam
+            </button>
           )}
         </div>
       </DialogContent>

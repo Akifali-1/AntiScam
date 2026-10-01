@@ -1,40 +1,30 @@
-import { motion } from 'framer-motion';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 
-const DashboardCard = ({ icon, label, value, color, trend, darkMode }) => {
+/**
+ * One figure, one label. The icon is a quiet marker in the corner rather than a
+ * coloured badge — a green/red/purple tile per metric is how a dashboard starts
+ * to look like a toy. The number is the message.
+ */
+const DashboardCard = ({ icon, label, value, trend }) => {
   const isPositive = trend && trend.startsWith('+');
 
   return (
-    <motion.div
-      whileHover={{ y: -5, scale: 1.02 }}
-      className="glass p-6 rounded-xl"
+    <div
+      className="card card-pad h-full"
       data-testid={`dashboard-card-${label.toLowerCase().replace(/ /g, '-')}`}
     >
-      <div className="flex items-start justify-between mb-4">
-        <div
-          className="w-12 h-12 rounded-lg flex items-center justify-center"
-          style={{
-            backgroundColor: darkMode ? `${color}30` : `${color}20`,
-            color: color
-          }}
-        >
-          {icon}
-        </div>
+      <div className="flex items-center justify-between mb-4">
+        <span className="text-ink-faint">{icon}</span>
         {trend && (
-          <div className={`flex items-center gap-1 text-xs font-semibold ${isPositive ? 'text-green-600' : 'text-red-600'
-            }`}>
+          <span className={`flex items-center gap-1 text-xs font-medium ${isPositive ? 'text-teal' : 'text-red'}`}>
             {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
             {trend}
-          </div>
+          </span>
         )}
       </div>
-      <div>
-        <div className="text-3xl font-bold mb-1" style={{ color: color }}>
-          {value}
-        </div>
-        <div className="text-sm text-gray-600">{label}</div>
-      </div>
-    </motion.div>
+      <div className="stat-value">{value}</div>
+      <div className="stat-label mt-1.5">{label}</div>
+    </div>
   );
 };
 

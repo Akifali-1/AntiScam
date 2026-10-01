@@ -1,10 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Lock, ArrowRight } from 'lucide-react';
-import { Button } from './ui/button';
-import { Input } from './ui/input';
 
-const PINEntry = ({ isOpen, onComplete, onCancel, receiver, amount, darkMode }) => {
+const PINEntry = ({ isOpen, onComplete, onCancel, receiver, amount }) => {
   const [pin, setPin] = useState(['', '', '', '', '', '']);
   const inputRefs = useRef([]);
 
@@ -15,13 +13,12 @@ const PINEntry = ({ isOpen, onComplete, onCancel, receiver, amount, darkMode }) 
   }, [isOpen]);
 
   const handleChange = (index, value) => {
-    if (value.length > 1) return; // Only allow single digit
+    if (value.length > 1) return;
 
     const newPin = [...pin];
-    newPin[index] = value.replace(/\D/g, ''); // Only numbers
+    newPin[index] = value.replace(/\D/g, '');
     setPin(newPin);
 
-    // Auto-focus next input
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
@@ -52,7 +49,6 @@ const PINEntry = ({ isOpen, onComplete, onCancel, receiver, amount, darkMode }) 
     e.preventDefault();
     const pinString = pin.join('');
     if (pinString.length === 6) {
-      // Demo PIN - any 6 digits work
       onComplete(pinString);
     }
   };
@@ -64,36 +60,40 @@ const PINEntry = ({ isOpen, onComplete, onCancel, receiver, amount, darkMode }) 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-ink/50 px-4"
       onClick={onCancel}
     >
       <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 8 }}
         onClick={(e) => e.stopPropagation()}
-        className={darkMode ? "glass p-8 rounded-2xl max-w-md w-full mx-4 border-2 border-[#00C896]/30 bg-gray-800" : "glass p-8 rounded-2xl max-w-md w-full mx-4 border-2 border-[#00C896]/30"}
+        className="card p-8 w-full max-w-sm"
         data-testid="pin-entry-modal"
       >
-        <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-gradient-to-br from-[#00C896] to-[#0091FF] rounded-full flex items-center justify-center mx-auto mb-4">
-            <Lock className="w-8 h-8 text-white" />
+        <div className="flex items-center gap-2.5 mb-6">
+          <div className="w-8 h-8 rounded-md bg-surface-3 flex items-center justify-center">
+            <Lock className="w-4 h-4 text-ink-muted" />
           </div>
-          <h2 className={darkMode ? "text-2xl font-bold mb-2 text-white" : "text-2xl font-bold mb-2 text-gray-900"}>Enter PIN</h2>
-          <p className={darkMode ? "text-sm text-gray-400" : "text-sm text-gray-600"}>
-            Confirm transaction to {receiver || 'receiver'}
-          </p>
-          <p className={darkMode ? "text-lg font-semibold text-white mt-2" : "text-lg font-semibold text-gray-900 mt-2"}>
-            ₹{amount || '0'}
-          </p>
+          <div>
+            <h2 className="t-card">Confirm transfer</h2>
+            <p className="t-secondary">
+              To <span className="t-technical">{receiver || 'recipient'}</span>
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-baseline gap-2 mb-7">
+          <span className="stat-value">₹{amount || '0'}</span>
+          <span className="t-secondary">leaving your account</span>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="flex justify-center gap-2">
+          <div className="flex justify-between gap-2">
             {pin.map((digit, index) => (
-              <Input
+              <input
                 key={index}
-                ref={(el) => (inputRefs.current[index] = el)}
+                ref={(el) => { inputRefs.current[index] = el; }}
                 type="text"
                 inputMode="numeric"
                 maxLength={1}
@@ -101,34 +101,28 @@ const PINEntry = ({ isOpen, onComplete, onCancel, receiver, amount, darkMode }) 
                 onChange={(e) => handleChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 onPaste={handlePaste}
-                className={darkMode ? "w-12 h-14 text-center text-2xl font-bold border-2 border-gray-600 focus:border-[#00C896] focus:ring-[#00C896] bg-gray-700 text-white" : "w-12 h-14 text-center text-2xl font-bold border-2 border-gray-300 focus:border-[#00C896] focus:ring-[#00C896]"}
+                aria-label={`PIN digit ${index + 1}`}
+                className="w-full h-14 text-center text-lg tnum font-medium rounded-md border border-border-strong bg-surface text-ink focus:outline-none focus:border-focus focus:ring-[3px] focus:ring-blue-tint transition-colors"
                 data-testid={`pin-input-${index}`}
               />
             ))}
           </div>
 
-          <div className="flex gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onCancel}
-              className="flex-1"
-            >
+          <div className="flex gap-2">
+            <button type="button" onClick={onCancel} className="btn btn-secondary flex-1 h-10">
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
               type="submit"
               disabled={pin.join('').length !== 6}
-              className="flex-1 bg-gradient-to-r from-[#00C896] to-[#0091FF] hover:from-[#00A077] hover:to-[#0075CC] text-white"
+              className="btn btn-primary flex-1 h-10"
             >
               Confirm
-              <ArrowRight className="ml-2 w-4 h-4" />
-            </Button>
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
 
-          <p className={darkMode ? "text-xs text-center text-gray-400" : "text-xs text-center text-gray-500"}>
-            Demo: Enter any 6-digit PIN
-          </p>
+          <p className="t-secondary text-center">Demo — any six digits will do.</p>
         </form>
       </motion.div>
     </motion.div>
@@ -136,4 +130,3 @@ const PINEntry = ({ isOpen, onComplete, onCancel, receiver, amount, darkMode }) 
 };
 
 export default PINEntry;
-

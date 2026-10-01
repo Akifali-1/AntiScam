@@ -1,115 +1,360 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
+/*
+ * Design tokens — the single source of truth for colour, type, space, radius.
+ *
+ * Palette intent: warm off-white paper, white surfaces, hairline borders. Chrome
+ * (nav, sidebar, footer) is a quiet surface sitting a step *below* the page, so
+ * white cards stay the highest thing on screen and carry the attention.
+ *
+ * Accents are semantic, never decorative:
+ *   red   — fraud, blocked, high risk
+ *   amber — review, elevated, needs a human
+ *   teal  — cleared, verified, safe
+ *   blue  — information, links, in-progress
+ *   gray  — neutral, low, "nothing to report"
+ *
+ * Colour is stored as raw RGB channel triplets (`22 24 29`) rather than hex so
+ * Tailwind's opacity modifiers keep working via `rgb(var(--ink) / 0.5)`.
+ *
+ * Dark mode is the same token set re-pointed under `.dark`, so every component
+ * themes for free and no component ever branches on the theme.
+ */
+
+:root {
+  /* Surfaces */
+  --bg: 246 245 241;
+  --surface: 255 255 255;
+  --surface-2: 251 250 247;
+  --surface-3: 242 240 234;
+
+  /* Chrome */
+  --chrome: 235 231 221;
+  --chrome-2: 223 218 205;
+  --chrome-border: 217 212 199;
+
+  /* Lines */
+  --border: 228 225 217;
+  --border-strong: 207 203 192;
+
+  /* Text */
+  --ink: 22 24 29;
+  --ink-muted: 90 96 104;
+  /* Was 134 139 148 — 3.4:1 on --bg, under the 4.5:1 floor for small text.
+     Now 4.6:1 on the page and 4.9:1 on a card. */
+  --ink-faint: 108 116 128;
+
+  /* Accents */
+  --red: 180 67 47;
+  --red-tint: 251 234 231;
+  --red-line: 236 207 201;
+
+  --blue: 47 93 138;
+  --blue-tint: 233 240 247;
+  --blue-line: 205 220 235;
+
+  --teal: 15 118 110;
+  --teal-tint: 228 242 240;
+  --teal-line: 194 224 220;
+
+  --amber: 133 77 14;
+  --amber-tint: 251 243 226;
+  --amber-line: 232 215 171;
+
+  --gray: 93 99 107;
+  --gray-tint: 240 240 238;
+  --gray-line: 220 220 216;
+
+  --focus: 47 93 138;
+
+  /* Instrument surface — where the product's own UI is shown. Deliberately its
+     own dark scale in both themes, the way a real screenshot would be: on paper
+     it reads as a captured screen, and on dark it sits a step raised. */
+  --instrument: 16 19 25;
+  --instrument-2: 23 27 34;
+  --instrument-border: 42 48 58;
+  --instrument-ink: 233 235 238;
+  --instrument-ink-muted: 154 161 172;
+  --instrument-ink-faint: 108 116 128;
+
+  /*
+   * Type scale. One named step per job, so two things doing the same job are
+   * always the same size:
+   *
+   *   12    xs      eyebrow, micro meta
+   *   13.5  sm      secondary text, technical values, labels
+   *   14    ui      controls, table cells, nav
+   *   16    base    body copy
+   *   18    md      card titles
+   *   21    lg      lead paragraph, larger card titles
+   *   27    xl      section titles
+   *   36    2xl     section titles on marketing surfaces
+   *   46    3xl     page titles
+   *   clamp display hero only
+   *   34    metric  headline figures
+   */
+  --fs-xs: 12px;
+  --fs-sm: 13.5px;
+  --fs-ui: 14px;
+  --fs-base: 16px;
+  --fs-md: 18px;
+  --fs-lg: 21px;
+  --fs-xl: 27px;
+  --fs-2xl: 36px;
+  --fs-3xl: 46px;
+  --fs-display: clamp(2.75rem, 6.2vw, 4.5rem);
+  --fs-metric: 34px;
+
+  /* Radius. Near-square: radius is not the personality of this product. */
+  --radius: 6px;
+
+  color-scheme: light;
+}
+
+.dark {
+  --bg: 16 19 25;
+  --surface: 23 27 34;
+  --surface-2: 29 34 42;
+  --surface-3: 35 41 50;
+
+  /* Chrome inverts its relationship rather than its value: on a near-black page
+     the panel reads as raised by sitting a step *lighter*, mirroring light mode. */
+  --chrome: 23 27 34;
+  --chrome-2: 35 41 50;
+  --chrome-border: 42 48 58;
+
+  --border: 42 48 58;
+  --border-strong: 58 66 78;
+
+  --ink: 233 235 238;
+  --ink-muted: 162 169 180;
+  --ink-faint: 118 125 136;
+
+  /* Accents lighten for contrast against the dark surface rather than invert. */
+  --red: 217 99 76;
+  --red-tint: 42 26 22;
+  --red-line: 74 42 35;
+
+  --blue: 108 156 201;
+  --blue-tint: 22 34 46;
+  --blue-line: 39 57 76;
+
+  --teal: 42 167 155;
+  --teal-tint: 16 36 31;
+  --teal-line: 29 61 54;
+
+  --amber: 214 158 46;
+  --amber-tint: 42 33 19;
+  --amber-line: 74 58 28;
+
+  --gray: 154 161 172;
+  --gray-tint: 32 36 43;
+  --gray-line: 49 55 65;
+
+  --focus: 108 156 201;
+
+  /* Raised rather than inverted — on a near-black page the panel lifts. */
+  --instrument: 23 27 34;
+  --instrument-2: 29 34 42;
+  --instrument-border: 58 66 78;
+
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    border-color: rgb(var(--border));
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
     margin: 0;
-    font-family:
-        -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-        "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-        sans-serif;
+    background: rgb(var(--bg));
+    color: rgb(var(--ink));
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: var(--fs-base);
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Headings set colour only — never a face. Setting the display serif at the
+     element level leaked it into every `h3.t-card`, which then faux-bolded a
+     single-weight typeface. The .t-* utility decides the face. */
+  h1, h2, h3, h4 {
+    color: rgb(var(--ink));
+  }
+
+  code, pre, kbd {
+    font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  }
+
+  /* One visible focus treatment, applied consistently. Mouse users never see it. */
+  :focus-visible {
+    outline: 2px solid rgb(var(--focus));
+    outline-offset: 1px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: rgb(var(--blue-tint));
+    color: rgb(var(--ink));
+  }
+
+  [data-debug-wrapper="true"] {
+    display: contents !important;
+  }
 }
 
-code {
-    font-family:
-        source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+/* Thin scrollbars so dense panels don't get chunky native chrome. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--border-strong));
+  border: 3px solid rgb(var(--bg));
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--ink-faint));
 }
 
-@layer base {
-    :root {
-        --background: 0 0% 100%;
-        --foreground: 0 0% 3.9%;
-        --card: 0 0% 100%;
-        --card-foreground: 0 0% 3.9%;
-        --popover: 0 0% 100%;
-        --popover-foreground: 0 0% 3.9%;
-        --primary: 0 0% 9%;
-        --primary-foreground: 0 0% 98%;
-        --secondary: 0 0% 96.1%;
-        --secondary-foreground: 0 0% 9%;
-        --muted: 0 0% 96.1%;
-        --muted-foreground: 0 0% 45.1%;
-        --accent: 0 0% 96.1%;
-        --accent-foreground: 0 0% 9%;
-        --destructive: 0 84.2% 60.2%;
-        --destructive-foreground: 0 0% 98%;
-        --border: 0 0% 89.8%;
-        --input: 0 0% 89.8%;
-        --ring: 0 0% 3.9%;
-        --chart-1: 12 76% 61%;
-        --chart-2: 173 58% 39%;
-        --chart-3: 197 37% 24%;
-        --chart-4: 43 74% 66%;
-        --chart-5: 27 87% 67%;
-        --radius: 0.5rem;
-    }
-    .dark {
-        --background: 0 0% 3.9%;
-        --foreground: 0 0% 98%;
-        --card: 0 0% 3.9%;
-        --card-foreground: 0 0% 98%;
-        --popover: 0 0% 3.9%;
-        --popover-foreground: 0 0% 98%;
-        --primary: 0 0% 98%;
-        --primary-foreground: 0 0% 9%;
-        --secondary: 0 0% 14.9%;
-        --secondary-foreground: 0 0% 98%;
-        --muted: 0 0% 14.9%;
-        --muted-foreground: 0 0% 63.9%;
-        --accent: 0 0% 14.9%;
-        --accent-foreground: 0 0% 98%;
-        --destructive: 0 62.8% 30.6%;
-        --destructive-foreground: 0 0% 98%;
-        --border: 0 0% 14.9%;
-        --input: 0 0% 14.9%;
-        --ring: 0 0% 83.1%;
-        --chart-1: 220 70% 50%;
-        --chart-2: 160 60% 45%;
-        --chart-3: 30 80% 55%;
-        --chart-4: 280 65% 60%;
-        --chart-5: 340 75% 55%;
-    }
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--border-strong)) transparent;
 }
 
-@layer base {
-    * {
-        @apply border-border;
-    }
-    body {
-        @apply bg-background text-foreground;
-    }
+/*
+ * Type scale as utilities, so screens compose hierarchy rather than inventing
+ * sizes. Uppercase is deliberately absent — hierarchy is size and weight, and
+ * a page that shouts in caps is the tell of a generated interface.
+ */
+.t-display {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: var(--fs-display);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 1.02;
+  color: rgb(var(--ink));
 }
 
-@layer base {
-    [data-debug-wrapper="true"] {
-        display: contents !important;
-    }
+.t-page {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: var(--fs-3xl);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: rgb(var(--ink));
+}
 
-    [data-debug-wrapper="true"] > * {
-        margin-left: inherit;
-        margin-right: inherit;
-        margin-top: inherit;
-        margin-bottom: inherit;
-        padding-left: inherit;
-        padding-right: inherit;
-        padding-top: inherit;
-        padding-bottom: inherit;
-        column-gap: inherit;
-        row-gap: inherit;
-        gap: inherit;
-        border-left-width: inherit;
-        border-right-width: inherit;
-        border-top-width: inherit;
-        border-bottom-width: inherit;
-        border-left-style: inherit;
-        border-right-style: inherit;
-        border-top-style: inherit;
-        border-bottom-style: inherit;
-        border-left-color: inherit;
-        border-right-color: inherit;
-        border-top-color: inherit;
-        border-bottom-color: inherit;
-    }
+.t-section {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: var(--fs-xl);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  color: rgb(var(--ink));
+}
+
+/* Section titles on marketing surfaces — one step up from .t-section. */
+.t-section-lg {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-size: var(--fs-2xl);
+  font-weight: 400;
+  letter-spacing: -0.018em;
+  line-height: 1.15;
+  color: rgb(var(--ink));
+}
+
+.t-card {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: var(--fs-md);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.3;
+  color: rgb(var(--ink));
+}
+
+.t-body {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: var(--fs-base);
+  line-height: 1.6;
+}
+
+.t-secondary {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  color: rgb(var(--ink-muted));
+}
+
+.t-metric {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: var(--fs-metric);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: rgb(var(--ink));
+}
+
+/* Technical values only: amounts, IDs, timestamps, raw output. Never prose. */
+.t-technical {
+  font-family: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Numbers, IDs and logs line up in columns instead of jittering. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Small label above a field or tile. Sentence case, muted, never a shout. */
+.t-label {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: rgb(var(--ink-muted));
+}
+
+/* The one place caps earn their keep: a two-word section marker that has to sit
+   below a large serif title without competing with it. */
+.t-eyebrow {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgb(var(--ink-faint));
+}
+
+@keyframes asc-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.pulse {
+  animation: asc-pulse 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
